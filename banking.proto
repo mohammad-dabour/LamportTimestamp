@@ -1,0 +1,25 @@
+syntax = "proto3";
+// The greeting service definition.
+service Banking {
+  // Sends a greeting
+  rpc MsgDelivery (BankingRequest) returns (BankingReply) {}
+}
+
+// The request message containing the user's name.
+message BankingRequest {
+  int32 id = 1;
+  string interface = 2;
+  float money = 3;
+ 
+  }
+
+// The response message containing the greetings
+
+message BankingReply {
+
+  int32 id = 1;
+  string interface = 2;
+  string result = 3;
+  float money = 4;
+  
+ }
