@@ -1,7 +1,7 @@
 syntax = "proto3";
-// The greeting service definition.
+
 service Banking {
-  // Sends a greeting
+
   rpc MsgDelivery (BankingRequest) returns (BankingReply) {}
 }
 
