@@ -2,6 +2,7 @@ import grpc
 import banking_pb2
 import banking_pb2_grpc
 
+
 class Branch(banking_pb2_grpc.BankingServicer):
 
     def __init__(self, id, balance, branches):
@@ -31,7 +32,7 @@ class Branch(banking_pb2_grpc.BankingServicer):
  
     def withdraw(self, money):
         
-
+        print("at: withdraw current balance ", self.balance)
     
         if self.balance >= money:
            
@@ -81,8 +82,9 @@ class Branch(banking_pb2_grpc.BankingServicer):
 
     
     def deposit(self, money):
-        
+        print("before: deposit current balance ", self.balance)
         if money > 0:
+
             self.balance = self.balance + money
             #self.propagate("deposit", money)
             return  self.check_id(self.id, "deposit", fail=False)
@@ -92,6 +94,7 @@ class Branch(banking_pb2_grpc.BankingServicer):
 
             
     def query(self):
+
         #{'id': 1, 'recv': [{'interface': 'query', 'result': 'success', 'money': 500}]}
         r = self.check_id(self.id, "query", fail=False)
   
@@ -121,7 +124,7 @@ class Branch(banking_pb2_grpc.BankingServicer):
                 response = stub.MsgDelivery(req)
                 if response.money != result['money']:
                     self.check_id(id, "withdraw", True)
-            
+            print("after: withdraw current balance ", self.balance)
         elif interface == "deposit":
             
                 result = dict(self.deposit(money))
@@ -137,11 +140,19 @@ class Branch(banking_pb2_grpc.BankingServicer):
                     response = stub.MsgDelivery(req)
                     if response.money != result['money']:
                         self.check_id(id, "deposit", True)
-        
+                print("after: deposit current balance ", self.balance)
         elif interface == "update":
             result = dict(self.update(money))
             #print("Done: new balance is: ", self.balance, " interface was deposit ")
         else:
+         
             result = dict(self.query())
          
         return banking_pb2.BankingReply(id=self.id, interface = result['interface'], result = result['result'],  money= result['money'])
+
+        
+            
+
+            
+            
+            
