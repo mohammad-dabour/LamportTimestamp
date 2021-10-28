@@ -68,7 +68,7 @@ async def fetch_customer(inputfile):
     #branches = list()
     tasks = {}
     result = {}
-    results = []
+    global results
     
 
    
@@ -86,14 +86,20 @@ async def fetch_customer(inputfile):
                 task =  asyncio.create_task(c.executeEvents())
                 tasks[str(p['id'])].append(task)
     r = []
-    resutl={}
+    resutl=[]
     for id in tasks.keys():
        
         for e in tasks[id]:
             r.append(await e)
-        
+    
+    
         print({'id': id, 'recv': r})
+        results.append(r[0])
         r =[]
+    with open(outputfile, 'a') as outfile:
+        json.dump(results, outfile)
+
+        
     #result[id].append(await e)
            
 
@@ -104,7 +110,8 @@ async def fetch_customer(inputfile):
         
 
 inputfile =''
-outputfile=''
+outputfile='output.json'
+results = []
 def readargs(argv):
     global inputfile
     global outputfile
