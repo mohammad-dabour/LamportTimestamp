@@ -19,16 +19,8 @@ class Branch(banking_pb2_grpc.BankingServicer):
         # iterate the processID of the branches
 
         
-        # TODO: students are expected to store the processID of the branches
-        #pass
-      
-    # TODO: students are expected to process requests from both Client and Branch
-    #def crate_branch_stub(self, id):
-            
-    #    ch = grpc.insecure_channel("localhost:4080"+str(id))
-    #    stub = banking_pb2_grpc.BankingStub(ch)
-    #    
-    #    return stub
+   
+
  
     def withdraw(self, money):
         
@@ -149,10 +141,3 @@ class Branch(banking_pb2_grpc.BankingServicer):
             result = dict(self.query())
          
         return banking_pb2.BankingReply(id=self.id, interface = result['interface'], result = result['result'],  money= result['money'])
-
-        
-            
-
-            
-            
-            
