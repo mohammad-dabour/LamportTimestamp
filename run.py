@@ -4,7 +4,7 @@ import os
 import time
 inputfile=''
 outputfile=''
-
+python_path = sys.executable 
 def run(argv):
     global inputfile
     global outputfile
@@ -27,7 +27,7 @@ def run(argv):
             print ('run.py -i <inputfile> -o <outputfile>')
             sys.exit()
         elif opt == '-s':
-            p = subprocess.run("/usr/bin/python3.9  server.py -s stop", shell=True, check=True)
+            p = subprocess.run(python_path +" server.py -s stop", shell=True, check=True)
             try:
                 os.remove("nohup.out")
                 os.remove("pids.run")
@@ -41,7 +41,7 @@ def run(argv):
             outputfile = arg
             cmd ="-o "+outputfile
     try:
-        p = subprocess.run("/usr/bin/python3.9  server.py -s stop >/dev/null", shell=True, check=True)
+        p = subprocess.run(python_path +" server.py -s stop >/dev/null", shell=True, check=True)
         try:
             os.remove("pids.run")
             os.remove("nohup.out")
@@ -50,7 +50,7 @@ def run(argv):
     except subprocess.CalledProcessError as grepexc:    
         pass
  
-    p = subprocess.run("nohup /usr/bin/python3.9  server.py "+cmd+" 2>/dev/null&", shell=True, check=True)
+    p = subprocess.run("nohup "+python_path +"  server.py "+cmd+" 2>/dev/null&", shell=True, check=True)
     print("starting services...\n")
     time.sleep(2)
     try:
