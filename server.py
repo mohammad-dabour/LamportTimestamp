@@ -5,87 +5,117 @@ import grpc
 import banking_pb2
 import banking_pb2_grpc
 import multiprocessing
-import datetime
 import time
 import os
 import sys, getopt
+import subprocess
+from os.path import exists
+
 inputfile = ''
 outputfile = 'output.txt'
-
-def get_branches():
-    processes =  json.load(open(inputfile,'r'))
-    branches = list()
-    for p in processes:
-        if p['type'] == 'branch' or p['type'] == 'bank':
-            branches.append(p['id'])
-     
-    return branches
-
-def get_balance(id):
-    processes =  json.load(open(inputfile,'r'))
-    for p in processes:
-        if (p['type'] == 'branch' or p['type'] == 'bank') and p['id'] == id:
-            return p['balance']
-
-def get_ids():
-    processes =  json.load(open(inputfile,'r'))
-    ids = list()
-    for p in processes:
-        if p['type'] == 'branch' or p['type'] == 'bank':
-            ids.append(p['id'])
-    return ids
-
-_ONE_DAY = datetime.timedelta(days=1)
-_PROCESS_COUNT = multiprocessing.cpu_count()
-_THREAD_CONCURRENCY = _PROCESS_COUNT
-
-def _wait_forever(server):
-    try:
-        while True:
-            time.sleep(_ONE_DAY.total_seconds())
-    except KeyboardInterrupt:
-        server.stop(None)
-
-
+class Server:
+    
+    def __init__(self,inputfile='input.json'):
+        self.process = json.load(open(inputfile,'r'))
+        self.pids = list()
+    
+    
+    def get_branches(self):
         
-def serve(bind_address, balance, branches):
+        branches = list()
+        for p in self.process:
+            if p['type'] == 'branch' or p['type'] == 'bank':
+                branches.append(p['id'])
+     
+        return branches
+   
+    def get_balance(self, id):
+
+        for p in self.process:
+            if (p['type'] == 'branch' or p['type'] == 'bank') and p['id'] == id:
+                 return p['balance']
+
+                
+    def get_ids(self):
+     
+        ids = list()
+        for p in self.process:
+            if p['type'] == 'branch' or p['type'] == 'bank':
+                ids.append(p['id'])
+        return ids
+
+    def add_pid(self, pid):
+        
+        if not exists('pids.run'):
+            with open('pids.run','w') as f:
+                f.write(str(pid)+" ")
+              
+        elif os.path.getsize("pids.run")==0:
+            with open('pids.run','a') as f: 
+                 f.write(str(pid)+" ")
+        else:
+            with open('pids.run','r') as f:
+                if len(f.read().split(',')) >=len(self.get_branches()):
+                    print("We have only ",self.get_branches()," opening, we can not open further branches.")
+                    import sys
+                    sys.exit(2)
+            with open('pids.run','a') as f: 
+                 f.write(str(pid)+" ")
+    
+    def stop(self):
+        if exists('pids.run'):
+            try:
+                p = subprocess.run("kill -9 `cat pids.run`", shell=True, check=True)
+                os.remove("pids.run")
+            except subprocess.CalledProcessError as grepexc:                                                                                                   
+                print("Failed to delete", grepexc.returncode)
+                
+
+        if not exists('pids.run'):
+            return True
+        else:
+            return False
+    def check_processes(self):
+        if exists('pids.run') and os.path.getsize("pids.run") > 0:
+            return True
+            
+    def serve(self, bind_address, balance, branches):
         
         process = multiprocessing.current_process()
-        print("PIDs:", process.pid)
-        #options = (('grpc.so_reuseport', 1),)
+        
+        self.add_pid(process.pid)
         server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
         banking_pb2_grpc.add_BankingServicer_to_server(branch.Branch(id, balance, branches), server)
         server.add_insecure_port(bind_address)
         server.start()
         #_wait_forever(server)
         server.wait_for_termination()
+    
 
-
-
-def main():
+    def run(self):
     
     
-    ids = get_ids()
-    branches = get_branches()
-    workers = list()
-    for id in ids:
-        balance = get_balance(id)
+        ids = self.get_ids()
+        branches = self.get_branches()
+        workers = list()
+        for id in ids:
+            balance = self.get_balance(id)
         
-        bind_address = '[::]:4080'+str(id)
-        print("Starting server. Listning on port port  4080"+str(id))
+            bind_address = '[::]:4080'+str(id)
+            print("Starting server. Listning on port port  4080"+str(id))
         
-        worker = multiprocessing.Process(target=serve,
+            worker = multiprocessing.Process(target=self.serve,
                                              args=(bind_address,balance, branches))
-        worker.start()
-        workers.append(worker)
+            worker.start()
+            workers.append(worker)
     
-    for worker in workers:
-        worker.join()
+        for worker in workers:
+            worker.join()
+        
     
 
         
-inputfile =''
-outputfile=''
+
 
 def readargs(argv):
     global inputfile
@@ -93,19 +123,32 @@ def readargs(argv):
   
     try:
         
-        opts, args = getopt.getopt(argv,"hi:o:",["ifile=","ofile="])
+        opts, args = getopt.getopt(argv,"hi:so:",["ifile=","ofile="])
         if len(opts) < 1:
-            print(len(opts))
-            print ('\nhelp: \n\tcustomer.py -i <inputfile> -o <outputfile>\n')
+    
+            print ('\nhelp: \n\tcustomer.py -i <inputfile> -o <outputfile> | -s stop \n')
             sys.exit(2)    
     except getopt.GetoptError:
         
-        print ('customer.py -i <inputfile> -o <outputfile>')
+        print ('customer.py -i <inputfile> -o <outputfile>| -s stop')
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
             print ('customer.py -i <inputfile> -o <outputfile>')
             sys.exit()
+        elif opt == '-s':
+            
+            server = Server()
+            if server.check_processes():
+                f = server.stop()
+                if not f:
+                    print("Failed to shutdown gracefully")
+                else:
+                    print("All servers stopeed successfuly")
+                    sys.exit(0)
+            else:
+                print("No service is running")
+                sys.exit(0)
         elif opt in ("-i", "--ifile"):
             inputfile = arg
         elif opt in ("-o", "--ofile"):
@@ -113,4 +156,5 @@ def readargs(argv):
                 
 if __name__ == "__main__":
     readargs(sys.argv[1:])
-    main()
+    server = Server(inputfile)
+    server.run()
