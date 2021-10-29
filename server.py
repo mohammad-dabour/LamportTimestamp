@@ -126,15 +126,15 @@ def readargs(argv):
         opts, args = getopt.getopt(argv,"hi:so:",["ifile=","ofile="])
         if len(opts) < 1:
     
-            print ('\nhelp: \n\tcustomer.py -i <inputfile> -o <outputfile> | -s stop \n')
+            print ('\nhelp: \n\tserver.py -i <inputfile>  | -s stop \n')
             sys.exit(2)    
     except getopt.GetoptError:
         
-        print ('customer.py -i <inputfile> -o <outputfile>| -s stop')
+        print ('server.py -i <inputfile> | -s stop')
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print ('customer.py -i <inputfile> -o <outputfile>')
+            print ('help: \t\nserver.py -i <inputfile> ')
             sys.exit()
         elif opt == '-s':
             
