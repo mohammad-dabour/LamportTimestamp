@@ -95,10 +95,11 @@ class Server:
     def run(self):
     
     
-        ids = self.get_ids()
+        #ids = self.get_ids()
+        
         branches = self.get_branches()
         workers = list()
-        for id in ids:
+        for id in branches:
             balance = self.get_balance(id)
         
             bind_address = '[::]:4080'+str(id)
