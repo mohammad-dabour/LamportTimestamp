@@ -138,4 +138,3 @@ def readargs(argv):
 if __name__ == "__main__":
     readargs(sys.argv[1:])
     asyncio.run(fetch_customer(inputfile))
-   
