@@ -30,12 +30,12 @@ class Branch(banking_pb2_grpc.BankingServicer):
            
             self.balance = self.balance - money
             #self.update("withdraw", money)
-            return self.check_id(self.id, "withdraw", fail=False)
+            return self.check_id(self.id, "withdraw", False)
             
             
         else:
             #ToDO return fail.
-            return self.check_id(self.id, "withdraw", fail=True)
+            return self.check_id(self.id, "withdraw", True)
         
        
         
@@ -66,10 +66,10 @@ class Branch(banking_pb2_grpc.BankingServicer):
     
             if new_balance != self.balance:
                 self.balance = new_balance
-                return  self.check_id(self.id, "update", fail=False)
+                return  self.check_id(self.id, "update", False)
             
             else:
-                return  self.check_id(self.id, "update", fail=True)
+                return  self.check_id(self.id, "update", True)
 
 
     
@@ -79,19 +79,19 @@ class Branch(banking_pb2_grpc.BankingServicer):
 
             self.balance = self.balance + money
             #self.propagate("deposit", money)
-            return  self.check_id(self.id, "deposit", fail=False)
+            return  self.check_id(self.id, "deposit", False)
             
         else:
-            return  self.check_id(self.id, "deposit", fail=True)
+            return  self.check_id(self.id, "deposit", True)
 
             
     def query(self):
 
         #{'id': 1, 'recv': [{'interface': 'query', 'result': 'success', 'money': 500}]}
-        r = self.check_id(self.id, "query", fail=False)
+        r = self.check_id(self.id, "query", False)
   
         
-        return  self.check_id(self.id, "query", fail=False)
+        return  self.check_id(self.id, "query", False)
 
         #print("result", result)
     
