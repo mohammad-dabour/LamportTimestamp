@@ -95,11 +95,10 @@ class Server:
     def run(self):
     
     
-        #ids = self.get_ids()
-        
+        ids = self.get_ids()
         branches = self.get_branches()
         workers = list()
-        for id in branches:
+        for id in ids:
             balance = self.get_balance(id)
         
             bind_address = '[::]:4080'+str(id)
@@ -127,15 +126,15 @@ def readargs(argv):
         opts, args = getopt.getopt(argv,"hi:so:",["ifile=","ofile="])
         if len(opts) < 1:
     
-            print ('\nhelp: \n\tserver.py -i <inputfile>  | -s stop \n')
+            print ('\nhelp: \n\tcustomer.py -i <inputfile> -o <outputfile> | -s stop \n')
             sys.exit(2)    
     except getopt.GetoptError:
         
-        print ('server.py -i <inputfile> | -s stop')
+        print ('customer.py -i <inputfile> -o <outputfile>| -s stop')
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print ('help: \t\nserver.py -i <inputfile> ')
+            print ('customer.py -i <inputfile> -o <outputfile>')
             sys.exit()
         elif opt == '-s':
             
