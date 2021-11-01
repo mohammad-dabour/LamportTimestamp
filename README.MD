@@ -1,5 +1,7 @@
-###To install the requirements run the following command:
 ### This script wont run over python2.7
+
+###To install the requirements run the following command:
+
 
 $ pip install -r requirements.txt 
 
