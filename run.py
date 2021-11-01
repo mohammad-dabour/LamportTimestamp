@@ -4,7 +4,15 @@ import os
 import time
 inputfile=''
 outputfile=''
+
 python_path = sys.executable 
+
+def clean():
+    try:
+        os.remove("nohup.out")
+        os.remove("pids.run")
+    except:
+        pass
 
 def execute(cmd, types):
     
@@ -20,6 +28,7 @@ def execute(cmd, types):
     try:
         
         if types == "server":
+            clean()
             p = subprocess.run("nohup "+python_path +cmd+" 2>/dev/null&", shell=True, check=True)
             print("starting services...\n")
             time.sleep(2)
