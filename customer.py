@@ -75,7 +75,7 @@ async def fetch_customer(inputfile):
     for p in processes:
        
 
-        if p['type'] == 'customer':
+        if p['type'] == 'customer' or p['type'] == 'client':
             tasks[str(p['id'])] = []
             result[str(p['id'])] = []
             result['recv'] = []
