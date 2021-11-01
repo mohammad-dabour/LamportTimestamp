@@ -3,7 +3,7 @@
 ### To install the requirements run the following command:
 
 
-$ pip install -r requirements.txt 
+$ pip3.9 install -r requirements.txt 
 
 ### To run the server and provide it with inputs run:
 
