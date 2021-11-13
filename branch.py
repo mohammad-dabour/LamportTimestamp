@@ -37,7 +37,6 @@ class Branch(banking_pb2_grpc.BankingServicer):
     def event_request(self, event):
         self.clock = max(self.clock, self.r_c) + 1
         
-        print("event_request: got this event: ", event, self.id, self.e_id)
         self.msg["data"].append({"id": self.e_id, "name": event+"_request", "clock": self.clock})
         self.sub_event["data"].append({"clock": self.clock, "name": event+"_request"})
 
@@ -47,7 +46,6 @@ class Branch(banking_pb2_grpc.BankingServicer):
 
  
     def event_execute(self, event):
-        print("event_execute: got this event: ", event, self.id, self.e_id)
 
         self.clock = self.clock+1
         self.msg["data"].append({"id": self.e_id, "name": event+"_execute", "clock": self.clock})
@@ -57,10 +55,8 @@ class Branch(banking_pb2_grpc.BankingServicer):
     
     def event_response(self,event):
         self.clock = self.clock+1
-        print("event_response: got this event: ", event, self.id, self.e_id)
 
         self.sub_event["data"].append({"clock": self.clock, "name": event+"_response"})
-        print({"id": self.e_id, "name": event+"_response", "clock": self.clock})
         self.msg["data"].append({"id": self.e_id, "name": event+"_response", "clock": self.clock})
 
         
@@ -70,23 +66,17 @@ class Branch(banking_pb2_grpc.BankingServicer):
     def event_propogate_request(self, remote_clock, c_id, event):
 
         self.clock = max(self.clock, remote_clock)+1
-        print("event_propogate_request: got this event: ", event, self.id, self.e_id, c_id)
-        print({"id": c_id, "name": event+"_propogate_request", "clock": self.clock})
         self.msg["data"].append({"id": c_id, "name": event+"_propogate_request", "clock": self.clock})
         return self.event_propogate_execute(c_id, event)
 
     def event_propogate_execute(self, c_id, event):
             self.clock = self.clock+1
          
-            print("event_propogate_execute: got this event: ", event, self.id, self.e_id, c_id)
-            print({"id": c_id, "name": event+"_propogate_execute", "clock": self.clock})
             self.msg["data"].append({"id": c_id, "name": event+"_propogate_execute", "clock": self.clock})
             return {"id": c_id, "name": event+"_propogate_execute", "clock": self.clock}
    
     def event_propogate_response(self, clock, event):
-            print("event_propogate_response: got this event: ", event, self.id, self.e_id)
             self.clock +=1
-            print({"id": self.e_id, "name": event+"_propogate_response", "clock": self.clock})
             self.msg["data"].append({"id": self.e_id, "name": event+"_propogate_response", "clock": self.clock})
             
       
@@ -243,7 +233,6 @@ class Branch(banking_pb2_grpc.BankingServicer):
                     self.sub_event["data"].append({"clock": self.clock, "name": "deposit_propogate_response"})
               
         elif interface == "withdraw_propogate":
-            ### check if clock >2 then go ahead else wait untile request is done.
 
             result = self.event_propogate_request(remote_clock,c_id,"withdraw")
 
