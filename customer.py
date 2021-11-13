@@ -11,7 +11,9 @@ import time
 import asyncio 
 import sys, getopt
 from grpc import aio  
-        
+from multiprocessing import Process
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+
 class Customer: #client
     def __init__(self, id, events):
         # unique ID of the Customer
@@ -44,29 +46,55 @@ class Customer: #client
     async def executeEvents(self):
         
        
-        self.createStub()
-        
+        #self.createStub()
+        async with grpc.aio.insecure_channel('localhost:4080'+str(self.id)) as ch:
+            self.stub = banking_pb2_grpc.BankingStub(ch)
+            #response = await stub.SayHello(helloworld_pb2.HelloRequest(name='you'))
             #print(e)
             #print(e['interface'])
             #req = banking_pb2.BankingRequest(id=self.id, interface = e['interface'], money = e['money'])
-        if self.events['interface'] == "query" :
-       
-            await asyncio.sleep(3)
-            req = banking_pb2.BankingRequest(id=self.id, interface = self.events['interface'], money = self.events['money'])
-            response =  self.stub.MsgDelivery(req)   
-            return {"interface": response.interface, 'result': response.result, 'money' : response.money}
-        
+            if self.events['interface'] == "query" :
+                await asyncio.sleep(3)
+                req = banking_pb2.BankingRequest(id=self.id, interface = self.events['interface'],
+                                             clock=1,c_id =0,
+                                             remote_clock=0,
+                                             e_id = 0)
+            
+                await self.stub.MsgDelivery(req)
+                pass
                 #await self.updates(e)
         
-        req = banking_pb2.BankingRequest(id=self.id, interface = self.events['interface'], money = self.events['money'])
-        response =  self.stub.MsgDelivery(req)
-        return {"interface": response.interface, 'result': response.result}
+            else:
+            
+                print(f"start {self.events['interface']}  at  {time.strftime('%X')}")
+                #await asyncio.sleep(1)
+                req = banking_pb2.BankingRequest(id=self.id, interface = self.events['interface'],
+                                             clock=1,c_id =0,
+                                             remote_clock=0,
+                                             e_id = self.events['id'])
+            
+                await self.stub.MsgDelivery(req)
+                print(f"END {self.events['interface']}  at  {time.strftime('%X')}")
 
+        return 1
+        #return {"interface": response.interface, 'result': response.result}
+
+
+    
+    def get_results(self, id):
+        
+        ch = grpc.insecure_channel('localhost:4080'+str(id))
+        self.stub = banking_pb2_grpc.BankingStub(ch)
+        
+        req = banking_pb2.BResult(id=int(self.id),type=self.events['interface'])
+        self.stub.MsgResult(req)
+    
 async def fetch_customer(inputfile):
   
     processes =  json.load(open(inputfile,'r'))
     #branches = list()
     tasks = {}
+    tsk = []
     result = {}
     global results
     
@@ -79,12 +107,16 @@ async def fetch_customer(inputfile):
             tasks[str(p['id'])] = []
             result[str(p['id'])] = []
             result['recv'] = []
-            #tasks[str(p['id'])]['result']['recv']  = result['recv']
 
             for e in p['events']:
                 c = Customer(p['id'], e)
                 task =  asyncio.create_task(c.executeEvents())
                 tasks[str(p['id'])].append(task)
+                tsk.append(task)
+    
+    await asyncio.gather(*tsk)
+    
+    '''
     r = []
     resutl=[]
     for id in tasks.keys():
@@ -93,15 +125,25 @@ async def fetch_customer(inputfile):
             r.append(await e)
     
     
-        print({'id': id, 'recv': r})
+
         results.append(r[0])
         r =[]
-    with open(outputfile, 'a') as outfile:
-        json.dump(results, outfile)
-
-        
-    #result[id].append(await e)
-           
+    '''
+    for p in processes:
+   
+        if p['type'] == 'customer' or p['type'] == 'client':
+            
+            for e in p['events']:
+                if e['interface'] != "query":
+                    print(p['id'], e)
+                    c = Customer(p['id'], e)
+                    c.get_results(int(p['id']))
+                elif len(p['events'])>1:
+                    continue
+                else:
+                    print(p['id'], e)
+                    c = Customer(p['id'], e)
+                    c.get_results(int(p['id']))
 
     
 
