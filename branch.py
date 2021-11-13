@@ -34,109 +34,57 @@ class Branch(banking_pb2_grpc.BankingServicer):
 
         
 
-    def withdraw_request(self):
-        
+    def event_request(self, event):
         self.clock = max(self.clock, self.r_c) + 1
         
-        #if self.clock ==1:
-        #    self.clock+=1
-        self.msg["data"].append({"id": self.id, "name": "withdraw_request", "clock": self.clock})
-        self.sub_event["data"].append({"clock": self.clock, "name": "withdraw_request"})
-        self.withdraw_execute()
+        
+        self.msg["data"].append({"id": self.id, "name": event+"_request", "clock": self.clock})
+        self.sub_event["data"].append({"clock": self.clock, "name": event+"_request"})
+     
+        self.event_execute(event)
+
         
 
  
-    def withdraw_execute(self):
+    def event_execute(self, event):
         #if self.clock==2:
         #    self.clock = self.clock+1
         self.clock = self.clock+1
-        self.msg["data"].append({"id": self.e_id, "name": "withdraw_execute", "clock": self.clock})
-        self.sub_event["data"].append({"clock": self.clock, "name": "withdraw_execute"})
+        self.msg["data"].append({"id": self.e_id, "name": event+"_execute", "clock": self.clock})
+        self.sub_event["data"].append({"clock": self.clock, "name": event+"_execute"})
     
         
     
-    def withdraw_response(self):
+    def event_response(self,event):
         self.clock = self.clock+1
-        
-        self.sub_event["data"].append({"clock": self.clock, "name": "withdraw_response"})
-        self.msg["data"].append({"id": self.e_id, "name": "withdraw_response", "clock": self.clock})
+        self.sub_event["data"].append({"clock": self.clock, "name": event+"_response"})
+        self.msg["data"].append({"id": self.e_id, "name": event+"_response", "clock": self.clock})
 
         
 
 
     
-    def withdraw_propogate_request(self, remote_clock, c_id):
+    def event_propogate_request(self, remote_clock, c_id, event):
 
         self.clock = max(self.clock, remote_clock)+1
      
-        self.msg["data"].append({"id": c_id, "name": "withdraw_propogate_request", "clock": self.clock})
-        return self.withdraw_propogate_execute(c_id)
+        self.msg["data"].append({"id": c_id, "name": event+"_propogate_request", "clock": self.clock})
+        return self.event_propogate_execute(c_id, event)
 
-    def withdraw_propogate_execute(self, c_id):
+    def event_propogate_execute(self, c_id, event):
             self.clock = self.clock+1
          
             
-            self.msg["data"].append({"id": c_id, "name": "withdraw_propogate_execute", "clock": self.clock})
-            return {"id": c_id, "name": "withdraw_propogate_execute", "clock": self.clock}
+            self.msg["data"].append({"id": c_id, "name": event+"_propogate_execute", "clock": self.clock})
+            return {"id": c_id, "name": event+"_propogate_execute", "clock": self.clock}
    
-    def withdraw_propogate_response(self, clock):
+    def event_propogate_response(self, clock, event):
             self.clock +=1
-            
-            self.msg["data"].append({"id": self.e_id, "name": "withdraw_propogate_response", "clock": self.clock})
+            self.msg["data"].append({"id": self.e_id, "name": event+"_propogate_response", "clock": self.clock})
             
       
 
 
-    def deposit_propogate_request(self, remote_clock ,c_id):
-        self.clock = max(self.clock, remote_clock)+1
-
-        self.msg["data"].append({"id": c_id, "name": "deposit_propogate_request", "clock": self.clock})
-        return self.deposit_propogate_execute(c_id)
-        
-
-    def deposit_propogate_execute(self, c_id):
-            self.clock = self.clock+1
-            self.msg["data"].append({"id": c_id, "name": "deposit_propogate_execute", "clock": self.clock})
-            return dict({"id": c_id, "name": "deposit_propogate_execute", "clock": self.clock})
-    
-    def deposit_propogate_response(self, clock):
-        
-            self.clock +=1
-
-            self.msg["data"].append({"id": self.e_id, "name": "deposit_propogate_response", "clock": self.clock})
-
-
-
-    def deposit_request(self):
-
-        self.clock = max(self.clock, self.r_c)+1
-        
-        self.sub_event["data"].append({"clock": self.clock, "name": "deposit_request"})
-
-        #internal operations does not need to sync time.
-        self.msg["data"].append({"id": self.e_id, "name": "deposit_request", "clock": 2})
-
-        self.deposit_execute()
-    
-
-    def deposit_execute(self):
-        
-        if self.clock ==2:
-            self.clock+=1
-        
-        self.sub_event["data"].append({"clock": self.clock, "name": "deposit_execute"})
-
-        self.msg["data"].append({"id": self.e_id, "name": "deposit_execute", "clock": 3})
-
-
-        
-    def deposit_response(self):
-        
-        self.clock = self.clock+1
-        
-        self.sub_event["data"].append({"clock": self.clock, "name": "deposit_response"})
-
-        self.msg["data"].append({"id": self.e_id, "name": "deposit_response", "clock": self.clock})
 
 
 
@@ -146,7 +94,7 @@ class Branch(banking_pb2_grpc.BankingServicer):
         
         
         if request.type == "withdraw":
-            self.withdraw_response()
+            self.event_response("withdraw")
             
             if not os.path.exists("output1.json"):
                 
@@ -175,10 +123,8 @@ class Branch(banking_pb2_grpc.BankingServicer):
         
         elif request.type == "deposit":
             
-            self.deposit_response()
-          
-            #print(self.msg,"\n")
-            #print(self.sub_event,"\n")
+            self.event_response("deposit")
+
             if not os.path.exists("output1.json"):
                 #processes =  json.load(open("output.json",'w'))
                 
@@ -193,7 +139,6 @@ class Branch(banking_pb2_grpc.BankingServicer):
                     json.dump(jfile, outfile)
             
             if not os.path.exists("output2.json"):
-                #processes =  json.load(open("output.json",'w'))
                 with   open("output2.json", 'w') as outfile:
                      json.dump([self.sub_event], outfile) 
             else:
@@ -231,12 +176,11 @@ class Branch(banking_pb2_grpc.BankingServicer):
         if len(self.sub_event.keys()) == 0 and (interface == "withdraw" or interface=="deposit"):
             self.sub_event = {"eventid": self.e_id, "data": []}
         
-        #if interface == "query":
-        #    print(self.msg,"\n")
+    
        
         if interface == "withdraw":
             
-            self.withdraw_request()
+            self.event_request("withdraw")
 
             
             for id in self.branches:
@@ -257,12 +201,12 @@ class Branch(banking_pb2_grpc.BankingServicer):
                 self.sub_event["data"].append({"clock": response.clock-1, "name": "withdraw_propogate_request"})
                 self.sub_event["data"].append({"clock": response.clock, "name": "withdraw_propogate_execute"})
 
-                self.withdraw_propogate_response(self.e_id)
+                self.event_propogate_response(self.e_id, "withdraw")
                 self.sub_event["data"].append({"clock": self.clock, "name": "withdraw_propogate_response"})
       
         elif interface == "deposit":
             
-                self.deposit_request()
+                self.event_request("deposit")
 
                 
                 for id in self.branches:
@@ -283,20 +227,20 @@ class Branch(banking_pb2_grpc.BankingServicer):
                     self.sub_event["data"].append({"clock": response.clock-1, "name": "deposit_propogate_request"})
                     self.sub_event["data"].append({"clock": response.clock, "name": "deposit_propogate_execute"})
 
-                    self.deposit_propogate_response(self.e_id)
+                    self.event_propogate_response(self.e_id, "deposit")
                     self.sub_event["data"].append({"clock": self.clock, "name": "deposit_propogate_response"})
               
         elif interface == "withdraw_propogate":
             ### check if clock >2 then go ahead else wait untile request is done.
 
-            result = self.withdraw_propogate_request(remote_clock,c_id)
+            result = self.event_propogate_request(remote_clock,c_id,"withdraw")
 
             return banking_pb2.BankingReply(id=self.id, interface = "withdraw_propogate", clock = result['clock'])
          
             
         elif interface == "deposit_propogate":
  
-            result = self.deposit_propogate_request(remote_clock,c_id)
+            result = self.event_propogate_request(remote_clock,c_id,"deposit")
             
             return banking_pb2.BankingReply(id=self.id, interface = "deposit_propogate", clock = result['clock'])
         
