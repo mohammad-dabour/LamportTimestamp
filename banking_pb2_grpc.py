@@ -6,8 +6,7 @@ import banking_pb2 as banking__pb2
 
 
 class BankingStub(object):
-    """The greeting service definition.
-    """
+    """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
         """Constructor.
@@ -20,15 +19,24 @@ class BankingStub(object):
                 request_serializer=banking__pb2.BankingRequest.SerializeToString,
                 response_deserializer=banking__pb2.BankingReply.FromString,
                 )
+        self.MsgResult = channel.unary_unary(
+                '/Banking/MsgResult',
+                request_serializer=banking__pb2.BResult.SerializeToString,
+                response_deserializer=banking__pb2.BResult.FromString,
+                )
 
 
 class BankingServicer(object):
-    """The greeting service definition.
-    """
+    """Missing associated documentation comment in .proto file."""
 
     def MsgDelivery(self, request, context):
-        """Sends a greeting
-        """
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def MsgResult(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -41,6 +49,11 @@ def add_BankingServicer_to_server(servicer, server):
                     request_deserializer=banking__pb2.BankingRequest.FromString,
                     response_serializer=banking__pb2.BankingReply.SerializeToString,
             ),
+            'MsgResult': grpc.unary_unary_rpc_method_handler(
+                    servicer.MsgResult,
+                    request_deserializer=banking__pb2.BResult.FromString,
+                    response_serializer=banking__pb2.BResult.SerializeToString,
+            ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
             'Banking', rpc_method_handlers)
@@ -49,8 +62,7 @@ def add_BankingServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class Banking(object):
-    """The greeting service definition.
-    """
+    """Missing associated documentation comment in .proto file."""
 
     @staticmethod
     def MsgDelivery(request,
@@ -66,5 +78,22 @@ class Banking(object):
         return grpc.experimental.unary_unary(request, target, '/Banking/MsgDelivery',
             banking__pb2.BankingRequest.SerializeToString,
             banking__pb2.BankingReply.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def MsgResult(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/Banking/MsgResult',
+            banking__pb2.BResult.SerializeToString,
+            banking__pb2.BResult.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
