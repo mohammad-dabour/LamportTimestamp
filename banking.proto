@@ -3,13 +3,24 @@ syntax = "proto3";
 service Banking {
 
   rpc MsgDelivery (BankingRequest) returns (BankingReply) {}
+  rpc MsgResult (BResult) returns (BResult) {}
+  
 }
 
+
 // The request message containing the user's name.
+
+message BResult{
+    int32 id=1;
+    string type = 2;
+}
 message BankingRequest {
   int32 id = 1;
   string interface = 2;
-  float money = 3;
+  int32 clock=3;
+  int32 c_id = 4;
+  int32 remote_clock = 5;
+  int32 e_id = 6;
  
   }
 
@@ -19,7 +30,7 @@ message BankingReply {
 
   int32 id = 1;
   string interface = 2;
-  string result = 3;
-  float money = 4;
+  int32 clock =3;
+  
   
  }
