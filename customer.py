@@ -67,13 +67,16 @@ class Customer: #client
             else:
             
                 print(f"start {self.events['interface']}  at  {time.strftime('%X')}")
-                #await asyncio.sleep(1)
+            
+            
                 req = banking_pb2.BankingRequest(id=self.id, interface = self.events['interface'],
                                              clock=1,c_id =0,
                                              remote_clock=0,
                                              e_id = self.events['id'])
             
                 await self.stub.MsgDelivery(req)
+                
+                
                 print(f"END {self.events['interface']}  at  {time.strftime('%X')}")
 
         return 1
