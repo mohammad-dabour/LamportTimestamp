@@ -29,19 +29,6 @@ class Customer: #client
         
 
 
-    # TODO: students are expected to create the Customer stub
-    def createStub(self):
-       
-        ch = grpc.insecure_channel('localhost:4080'+str(self.id))
-        self.stub = banking_pb2_grpc.BankingStub(ch)
-        #print(ch._connectivity_state.connectivity)
-        
-        
-        #response = stub.SquareRoot(number)
-        #print(response)
-
-    # TODO: students are expected to send out the events to the Bank
-  
 
     async def executeEvents(self):
         
