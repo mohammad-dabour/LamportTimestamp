@@ -3,11 +3,6 @@ import banking_pb2
 import banking_pb2_grpc
 import time
 import json
-import branch
-from concurrent import futures
-import multiprocessing
-import datetime
-import time
 import os.path
 import asyncio 
 import sys, getopt
@@ -26,20 +21,15 @@ class Customer: #client
         self.stub = None
         self.result = {}
 
-        
-
 
 
     async def executeEvents(self):
         
        
-        #self.createStub()
+
         async with grpc.aio.insecure_channel('localhost:4080'+str(self.id)) as ch:
             self.stub = banking_pb2_grpc.BankingStub(ch)
-            #response = await stub.SayHello(helloworld_pb2.HelloRequest(name='you'))
-            #print(e)
-            #print(e['interface'])
-            #req = banking_pb2.BankingRequest(id=self.id, interface = e['interface'], money = e['money'])
+          
             if self.events['interface'] == "query" :
                 await asyncio.sleep(3)
                 req = banking_pb2.BankingRequest(id=self.id, interface = self.events['interface'],
@@ -49,8 +39,8 @@ class Customer: #client
                                              money = self.events['money'])
             
                 await self.stub.MsgDelivery(req)
-                pass
-                #await self.updates(e)
+           
+
         
             else:
             
@@ -68,9 +58,6 @@ class Customer: #client
                 await self.stub.MsgDelivery(req)
                 print(f"END {self.events['interface']}  at  {time.strftime('%X')}")
 
-        return 1
-        #return {"interface": response.interface, 'result': response.result}
-
 
     
     def get_results(self, id):
@@ -84,43 +71,25 @@ class Customer: #client
 async def fetch_customer(inputfile):
   
     processes =  json.load(open(inputfile,'r'))
-    #branches = list()
-    tasks = {}
-    tsk = []
-    result = {}
-    global results
-    
+ 
 
+    tsk = []
    
     for p in processes:
        
 
         if p['type'] == 'customer' or p['type'] == 'client':
-            tasks[str(p['id'])] = []
-            result[str(p['id'])] = []
-            result['recv'] = []
+  
 
             for e in p['events']:
                 c = Customer(p['id'], e)
                 task =  asyncio.create_task(c.executeEvents())
-                tasks[str(p['id'])].append(task)
+     
                 tsk.append(task)
     
     await asyncio.gather(*tsk)
     
-    '''
-    r = []
-    resutl=[]
-    for id in tasks.keys():
-       
-        for e in tasks[id]:
-            r.append(await e)
-    
-    
 
-        results.append(r[0])
-        r =[]
-    '''
     for p in processes:
    
         if p['type'] == 'customer' or p['type'] == 'client':
@@ -136,7 +105,6 @@ async def fetch_customer(inputfile):
      
                     c = Customer(p['id'], e)
                     c.get_results(int(p['id']))
-
         
 def read_results():
 
