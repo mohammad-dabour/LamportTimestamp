@@ -18,6 +18,7 @@ class Branch(banking_pb2_grpc.BankingServicer):
         self.stubList = list() ## what is supposed to be included here?...
         # a list of received messages used for debugging purpose
         self.msg = {"pid": self.id, "data": []}
+        self.money = 0
         
         self.recvMsg = list()
         
@@ -92,7 +93,7 @@ class Branch(banking_pb2_grpc.BankingServicer):
         self.e_id = request.id
         if request.type == "withdraw":
             self.event_response("withdraw")
-            
+            self.balance = self.balance  - self.money 
             if not os.path.exists("output1.json"):
                 
                 #processes =  json.load(open("output.json",'w'))
@@ -121,7 +122,8 @@ class Branch(banking_pb2_grpc.BankingServicer):
         elif request.type == "deposit":
             
             self.event_response("deposit")
-
+            self.balance = self.balance  + self.money 
+            
             if not os.path.exists("output1.json"):
                 #processes =  json.load(open("output.json",'w'))
                 
@@ -167,6 +169,7 @@ class Branch(banking_pb2_grpc.BankingServicer):
         self.id = request.id
         interface = request.interface
         c_id = request.c_id
+        self.money = request.money
         #if interface != "query":
             
         self.e_id = request.e_id
@@ -191,9 +194,11 @@ class Branch(banking_pb2_grpc.BankingServicer):
                 self.prop_req+=1
                 ch = grpc.insecure_channel("localhost:4080"+str(id))
                 stub = banking_pb2_grpc.BankingStub(ch)
-                req = banking_pb2.BankingRequest(id=id, interface = "withdraw_propogate",
+                req = banking_pb2.BankingRequest(id=id, 
+                                                 interface = "withdraw_propogate",
                                                  c_id = self.e_id,
-                                                 remote_clock = self.clock)
+                                                 remote_clock = self.clock,
+                                                money = self.money)
                 
                 response = stub.MsgDelivery(req)
 
@@ -220,7 +225,9 @@ class Branch(banking_pb2_grpc.BankingServicer):
         
                 
                     req = banking_pb2.BankingRequest(id=id, interface = "deposit_propogate",
-                                                     c_id = self.e_id, remote_clock = self.clock)
+                                                     c_id = self.e_id,
+                                                     remote_clock = self.clock,
+                                                    money = self.money)
                     response = stub.MsgDelivery(req)
                     
                     self.clock=max(self.clock, response.clock)
@@ -233,6 +240,8 @@ class Branch(banking_pb2_grpc.BankingServicer):
                     self.sub_event["data"].append({"clock": self.clock, "name": "deposit_propogate_response"})
               
         elif interface == "withdraw_propogate":
+            
+            self.balance = self.balance  - self.money 
 
             result = self.event_propogate_request(remote_clock,c_id,"withdraw")
 
@@ -240,7 +249,7 @@ class Branch(banking_pb2_grpc.BankingServicer):
          
             
         elif interface == "deposit_propogate":
- 
+            self.balance = self.balance  + self.money 
             result = self.event_propogate_request(remote_clock,c_id,"deposit")
             
             return banking_pb2.BankingReply(id=self.id, interface = "deposit_propogate", clock = result['clock'])
