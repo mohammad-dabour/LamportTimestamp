@@ -58,7 +58,8 @@ class Customer: #client
                 req = banking_pb2.BankingRequest(id=self.id, interface = self.events['interface'],
                                              clock=1,c_id =0,
                                              remote_clock=0,
-                                             e_id = 0)
+                                             e_id = 0,
+                                             money = self.events['money'])
             
                 await self.stub.MsgDelivery(req)
                 pass
