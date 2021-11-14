@@ -25,7 +25,7 @@ class Customer: #client
 
     async def executeEvents(self):
         
-       
+       # the clinet reuqests will run async mode.
 
         async with grpc.aio.insecure_channel('localhost:4080'+str(self.id)) as ch:
             self.stub = banking_pb2_grpc.BankingStub(ch)
