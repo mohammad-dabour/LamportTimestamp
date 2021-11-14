@@ -21,6 +21,7 @@ message BankingRequest {
   int32 c_id = 4;
   int32 remote_clock = 5;
   int32 e_id = 6;
+  int32 money = 7;
  
   }
 
