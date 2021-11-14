@@ -8,11 +8,11 @@ from concurrent import futures
 import multiprocessing
 import datetime
 import time
+import os.path
 import asyncio 
 import sys, getopt
 from grpc import aio  
-from multiprocessing import Process
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+
 
 class Customer: #client
     def __init__(self, id, events):
@@ -67,16 +67,17 @@ class Customer: #client
             else:
             
                 print(f"start {self.events['interface']}  at  {time.strftime('%X')}")
-            
-            
+                #await asyncio.sleep(1)
+               
                 req = banking_pb2.BankingRequest(id=self.id, interface = self.events['interface'],
-                                             clock=1,c_id =0,
+                                             clock=1,
+                                             c_id =self.events['id'],
                                              remote_clock=0,
-                                             e_id = self.events['id'])
+                                             e_id = self.events['id'],
+                                                money = self.events['money'])
+                
             
                 await self.stub.MsgDelivery(req)
-                
-                
                 print(f"END {self.events['interface']}  at  {time.strftime('%X')}")
 
         return 1
@@ -89,7 +90,7 @@ class Customer: #client
         ch = grpc.insecure_channel('localhost:4080'+str(id))
         self.stub = banking_pb2_grpc.BankingStub(ch)
         
-        req = banking_pb2.BResult(id=int(self.id),type=self.events['interface'])
+        req = banking_pb2.BResult(id=int(self.events['id']),type=self.events['interface'])
         self.stub.MsgResult(req)
     
 async def fetch_customer(inputfile):
@@ -138,22 +139,36 @@ async def fetch_customer(inputfile):
             
             for e in p['events']:
                 if e['interface'] != "query":
-                    print(p['id'], e)
+          
                     c = Customer(p['id'], e)
                     c.get_results(int(p['id']))
                 elif len(p['events'])>1:
                     continue
                 else:
-                    print(p['id'], e)
+     
                     c = Customer(p['id'], e)
                     c.get_results(int(p['id']))
 
-    
-
-    
+        
+def read_results():
 
         
+        jfile1, jfile2 = [], []
+        if os.path.exists("output1.json"):
+                
+            jfile1 = json.load(open("output1.json",'r'))
+            
+                
 
+        if os.path.exists("output2.json"):
+                
+            jfile2 = json.load(open("output2.json",'r'))
+        
+        with open("output.json", 'w') as outfile:
+             json.dump(jfile1+jfile2, outfile)
+
+        print(jfile1+jfile2) 
+        
 inputfile =''
 outputfile='output.json'
 results = []
@@ -183,4 +198,5 @@ def readargs(argv):
 if __name__ == "__main__":
     readargs(sys.argv[1:])
     asyncio.run(fetch_customer(inputfile))
+    read_results()
    
