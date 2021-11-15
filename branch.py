@@ -1,278 +1,182 @@
 import grpc
 import banking_pb2
 import banking_pb2_grpc
-import asyncio 
 import time
-import os.path
 import json
-class Branch(banking_pb2_grpc.BankingServicer):
+import os.path
+import asyncio 
+import sys, getopt
+from grpc import aio  
 
-    def __init__(self, id, balance, branches, clock=1): 
-        # unique ID of the Branch
+
+class Customer: #client
+    def __init__(self, id, events):
+        # unique ID of the Customer
         self.id = id
-        # replica of the Branch's balance
-        self.balance = balance
-        # the list of process IDs of the branches
-        self.branches = branches
-        # the list of Client stubs to communicate with the branches
-        self.stubList = list() ## what is supposed to be included here?...
+        # events from the input
+        self.events = events
         # a list of received messages used for debugging purpose
-        self.msg = {"pid": self.id, "data": []}
-        self.money = 0
-        
         self.recvMsg = list()
-        
-        # clock is going to be initilze here
-        self.clock = clock
+        # pointer for the stub
+        self.stub = None
+        self.result = {}
 
-        self.e_id = -1
-        self.sub_event = {}
-        self.prop_req=False
-        self.r_c =0
-        self.withdraw_failed=False
-      
+
+
+    async def executeEvents(self):
+        
+       # the clinet reuqests will run async mode.
+
+        async with grpc.aio.insecure_channel('localhost:4080'+str(self.id)) as ch:
+            self.stub = banking_pb2_grpc.BankingStub(ch)
+          
+            if self.events['interface'] == "query" :
+                await asyncio.sleep(3)
+                req = banking_pb2.BankingRequest(id=self.id, interface = self.events['interface'],
+                                             clock=1,
+                                             c_id =0,
+                                             remote_clock=0,
+                                             e_id = -1,
+                                             money = self.events['money'])
+            
+                await self.stub.MsgDelivery(req)
+           
 
         
-
-    def event_request(self, event):
-   
-        self.clock = max(self.clock, self.r_c) + 1
-        
-        self.msg["data"].append({"id": self.e_id, "name": event+"_request", "clock": self.clock})
-        
-        self.sub_event[str(self.e_id)].append({"clock": self.clock, "name": event+"_request"})
-     
-        if event == "withdraw":
-            if self.balance >= self.money:
-                self.balance = self.balance  - self.money
-                self.event_execute(event)
             else:
-                #print({"withdraw": "failed"})
-                self.withdraw_failed= True
-                #self.msg["data"]=[{"withdraw": "failed"}]
-                return banking_pb2.BankingReply(id=self.id, interface = "failed", clock = self.clock) 
-        else:
-            self.event_execute(event)
+            
+                print(f"start {self.events['interface']}  id = {self.id} sub event = {self.events['id']} at  {time.strftime('%X')}\n")
+                #await asyncio.sleep(1)
+                req = banking_pb2.BankingRequest(id=self.id, interface = self.events['interface'],
+                                             clock=1,
+                                             c_id =self.events['id'],
+                                             remote_clock=0,
+                                             e_id = self.events['id'],
+                                                money = self.events['money'])
+                
+            
+                res = await self.stub.MsgDelivery(req)
+                if res.interface == "failed":
+                    
+                    print("\t\tWithdrow action failed..",{"id": self.id, self.events['interface']: "failed"},"\n")
+                else:
+                    print("\t\tWithdrow action failed..",{"id": self.id, self.events['interface']: "success"},"\n")
 
+                print(f"Finished  {self.events['interface']}  id = {self.id} sub event = {self.events['id']} at  {time.strftime('%X')}\n")
+
+    
+    def get_results(self, id):
+
+        ch = grpc.insecure_channel('localhost:4080'+str(id))
+        self.stub = banking_pb2_grpc.BankingStub(ch)
+     
+        req = banking_pb2.BResult(id=int(self.events['id']),type=self.events['interface'])
+        self.stub.MsgResult(req)
         
+async def fetch_customer(inputfile):
+    tasks = {}
+    processes =  json.load(open(inputfile,'r'))
+    for p in processes:
+       
 
- 
-    def event_execute(self, event):
+        if p['type'] == 'customer' or p['type'] == 'client':
+            for e in p['events']:
+                tasks[str(e['id'])] = []
 
-        self.clock = self.clock+1
-        self.msg["data"].append({"id": self.e_id, "name": event+"_execute", "clock": self.clock})
-        self.sub_event[str(self.e_id)].append({"clock": self.clock, "name": event+"_execute"})
-    
-
-    
-    def event_response(self,event):
-        self.clock = self.clock+1
-
-        self.sub_event[str(self.e_id)].append({"clock": self.clock, "name": event+"_response"})
-        self.msg["data"].append({"id": self.e_id, "name": event+"_response", "clock": self.clock})
-
-        
-
-
-    
-    def event_propogate_request(self, remote_clock, c_id, event):
-
-        self.clock = max(self.clock, remote_clock)+1
-        self.msg["data"].append({"id": c_id, "name": event+"_propogate_request", "clock": self.clock})
-        return self.event_propogate_execute(c_id, event)
-
-    def event_propogate_execute(self, c_id, event):
-            self.clock = self.clock+1
-         
-            self.msg["data"].append({"id": c_id, "name": event+"_propogate_execute", "clock": self.clock})
-            return {"id": c_id, "name": event+"_propogate_execute", "clock": self.clock}
+    tsk = []
    
-    def event_propogate_response(self, clock, event):
-            self.clock +=1
-            self.msg["data"].append({"id": self.e_id, "name": event+"_propogate_response", "clock": self.clock})
-            
-      
+    for p in processes:
+       
 
-    
-    def MsgResult(self, request, context):
-        #print("request.id: ",request.id)
-        self.e_id = request.id
-
-        if request.type == "withdraw":
-
-            self.event_response("withdraw")
-            
-        elif  request.type == "deposit":
-            self.event_response("deposit")
-
-        if not os.path.exists("output1.json"):
-
-            with open("output1.json", 'w') as outfile:
-                    json.dump([self.msg], outfile)
-        else:
-            
-            jfile = json.load(open("output1.json",'r'))
-            
-            flag = True
-            for msg in range(0,len(jfile)):
-                if jfile[msg]['pid'] == self.msg['pid']:
-                    #print("jfile[",msg,"] = ",jfile[msg],"\n")
-                    #print("self.msg= ",self.msg,"\n")
-                    jfile[msg] = self.msg
-                    #print("after  ",jfile,"\n")
-                    flag = False
-         
-            
-            if flag:
-                jfile.append(self.msg)
-
-
-            with open("output1.json", 'w') as outfile:
-                json.dump(jfile, outfile)
-
-        if not os.path.exists("output2.json") and request.type != "query":
-    
-
-                with open("output2.json", 'w') as outfile:
-
-                    event = {"eventid": str(self.e_id), "data": self.sub_event[str(self.e_id)]}
-                    json.dump([event], outfile)
-
-        elif request.type != "query":  
-            #print()
-            jfile = json.load(open("output2.json",'r'))
-
-
-            event = {"eventid": str(self.e_id), "data": self.sub_event[str(self.e_id)]}
-            flag = True
-            #for msg in range(0,len(jfile)):
-            #    if jfile[msg]['eventid'] == str(self.e_id):
-            #        print("jfile[",msg,"] = ",jfile[msg],"\n")
-            #        print("self.sub_event[str(self.e_id)]= ",sself.sub_event[str(self.e_id)],"\n")
-            #        jfile[msg] = self.sub_event[str(self.e_id)]
-            #        print("after2  ",jfile,"\n")
-            #        flag = False
-            jfile.append(event)
-   
-            with open("output2.json", 'w') as outfile:
-                    json.dump(jfile, outfile)
-
-
-            
-        return banking_pb2.BResult(id=self.id)
-
-    def MsgDelivery(self,request, context):
-        
-
-        #self.withdraw_failed=False
-        self.e_id = request.e_id
-        interface = request.interface
-        c_id = request.c_id
-        self.money = request.money
-        self.id = request.id
-        
-         
-        remote_clock  = request.remote_clock
-        self.r_c = remote_clock
+        if p['type'] == 'customer' or p['type'] == 'client':
   
 
-        if request.interface != "query":
-            if str(self.e_id) not in self.sub_event and interface != "deposit_propogate" and interface != "withdraw_propogate":
-                
-                self.sub_event[str(self.e_id)] = []
-                #                self.sub_event = {str(self.e_id): []}
-
-            
-
-       
-
-                
-            
-                
-        
+            for e in p['events']:
+                c = Customer(p['id'], e)
+                task =  asyncio.create_task(c.executeEvents())
+                tasks[str(e['id'])].append(task)
+                #tsk.append(task)
     
+    #await asyncio.gather(*tsk)
+    c = {}
+    seen = "" 
+    for id in tasks.keys():
+        if str(id) in c:
+            time.sleep(3)
+        else:
+            c[str(id)]=1
        
-        if interface == "withdraw":
-            
-            
-            saveit_withdraw = self.e_id
-            self.event_request("withdraw")
-     
-            for id in self.branches:
-                if id == self.id:
-                      
+        for e in tasks[str(id)]:
+            await e
+        
+    for p in processes:
+   
+        if p['type'] == 'customer' or p['type'] == 'client':
+       
+            for e in p['events']:
+                
+                if e['interface'] != "query":
+                    
+                    c = Customer(p['id'], e)
+                    c.get_results(int(p['id']))
+                elif len(p['events'])>1:
                     continue
-                if self.withdraw_failed:
-                    return banking_pb2.BankingReply(id=self.id, interface = "failed", clock = self.clock) 
-
-                    break
-                
-                self.prop_req+=1
-                ch = grpc.insecure_channel("localhost:4080"+str(id))
-                stub = banking_pb2_grpc.BankingStub(ch)
-                req = banking_pb2.BankingRequest(id=id, 
-                                                 interface = "withdraw_propogate",
-                                                 c_id = self.e_id,
-                                                 remote_clock = self.clock,
-                                                money = self.money)
-                
-                response = stub.MsgDelivery(req)
-                self.e_id = saveit_withdraw
-                self.clock=max(self.clock, response.clock)
-                self.sub_event[str(saveit_withdraw)].append({"clock": response.clock-1, "name": "withdraw_propogate_request"})
-                self.sub_event[str(saveit_withdraw)].append({"clock": response.clock, "name": "withdraw_propogate_execute"})
-                self.e_id = saveit_withdraw
-                self.event_propogate_response(self.e_id, "withdraw")
-                self.sub_event[str(saveit_withdraw)].append({"clock": self.clock, "name": "withdraw_propogate_response"})
-
-        elif interface == "deposit":
-            
-                self.balance = self.balance  + self.money 
-                self.event_request("deposit")
-               
-                saveit_deposit = self.e_id
-                
-                
-                for id in self.branches:
-                    
-                    if id == self.id:
-                      
-                        continue
-
-                    ch = grpc.insecure_channel("localhost:4080"+str(id))
-                    stub = banking_pb2_grpc.BankingStub(ch)
+                else:
+                    c = Customer(p['id'], e)
+                    #print(" result id = ", int(p['id']))
+                    c.get_results(int(p['id']))
         
-       
-                    req = banking_pb2.BankingRequest(id=id, interface = "deposit_propogate",
-                                                     c_id = self.e_id,
-                                                     remote_clock = self.clock,
-                                                    money = self.money)
-                    response = stub.MsgDelivery(req)
-                    self.e_id = saveit_deposit
-                    self.clock=max(self.clock, response.clock)
-                    print("AAwell i got saveit_deposit: "+str(self.e_id)," ", saveit_deposit, self.sub_event.keys())
+def read_results():
 
-                    self.sub_event[str(saveit_deposit)].append({"clock": response.clock-1, "name": "deposit_propogate_request"})
-                    self.sub_event[str(saveit_deposit)].append({"clock": response.clock, "name": "deposit_propogate_execute"})
-                   
-                    print("is it zero deposit = ", self.e_id)
-                    
-                    self.event_propogate_response(self.e_id, "deposit")
-                    self.sub_event[str(saveit_deposit)].append({"clock": self.clock, "name": "deposit_propogate_response"})
-                    
-        elif interface == "withdraw_propogate":
-            
-            self.balance = self.balance  - self.money 
-
-            result = self.event_propogate_request(remote_clock,c_id,"withdraw")
-            
-            return banking_pb2.BankingReply(id=self.id, interface = "withdraw_propogate", clock = result['clock'])
-         
-            
-        elif interface == "deposit_propogate":
-            self.balance = self.balance  + self.money
-            result = self.event_propogate_request(remote_clock,c_id,"deposit")
-            
-            return banking_pb2.BankingReply(id=self.id, interface = "deposit_propogate", clock = result['clock'])
+        print("Please wait.. result will be saved at local directory with a file name output.json..\n Also result will be printed to the console..\n")
         
-        return banking_pb2.BankingReply(id=self.id, interface = "done", clock = self.clock)
+        time.sleep(1)
+        jfile1, jfile2 = [], []
+        if os.path.exists("output1.json"):
+                
+            jfile1 = json.load(open("output1.json",'r'))
+        else:
+            print("temporary files were either deleted or manually modified..please check your desk.")
+                
+
+        if os.path.exists("output2.json"):
+                
+            jfile2 = json.load(open("output2.json",'r'))
+        else:
+            print("temporary files were either deleted or manually modified..please check your desk.")
+
+        with open("output.json", 'w') as outfile:
+             json.dump(jfile1+jfile2, outfile)
+
+        print(jfile1+jfile2) 
+        
+inputfile =''
+outputfile='output.json'
+results = []
+def readargs(argv):
+    global inputfile
+    global outputfile
+
+    try:
+        
+        opts, args = getopt.getopt(argv,"hi:o:",["ifile=","ofile="])
+        if len(opts) < 1:
+            print(len(opts))
+            print ('\nhelp: \n\tcustomer.py -i <inputfile> -o <outputfile>\n')
+            sys.exit(2)    
+    except getopt.GetoptError:
+        
+        print ('customer.py -i <inputfile> -o <outputfile>')
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            print ('customer.py -i <inputfile> -o <outputfile>')
+            sys.exit()
+        elif opt in ("-i", "--ifile"):
+            inputfile = arg
+        elif opt in ("-o", "--ofile"):
+             outputfile = arg
+if __name__ == "__main__":
+    readargs(sys.argv[1:])
+    asyncio.run(fetch_customer(inputfile))
+    read_results()
