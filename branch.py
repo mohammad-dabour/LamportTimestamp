@@ -95,7 +95,7 @@ class Branch(banking_pb2_grpc.BankingServicer):
 
     
     def MsgResult(self, request, context):
-        print("request.id: ",request.id)
+        #print("request.id: ",request.id)
         self.e_id = request.id
 
         if request.type == "withdraw":
@@ -116,10 +116,10 @@ class Branch(banking_pb2_grpc.BankingServicer):
             flag = True
             for msg in range(0,len(jfile)):
                 if jfile[msg]['pid'] == self.msg['pid']:
-                    print("jfile[",msg,"] = ",jfile[msg],"\n")
-                    print("self.msg= ",self.msg,"\n")
+                    #print("jfile[",msg,"] = ",jfile[msg],"\n")
+                    #print("self.msg= ",self.msg,"\n")
                     jfile[msg] = self.msg
-                    print("after  ",jfile,"\n")
+                    #print("after  ",jfile,"\n")
                     flag = False
          
             
@@ -139,12 +139,19 @@ class Branch(banking_pb2_grpc.BankingServicer):
                     json.dump([event], outfile)
 
         elif request.type != "query":  
-
+            #print()
             jfile = json.load(open("output2.json",'r'))
 
 
             event = {"eventid": str(self.e_id), "data": self.sub_event[str(self.e_id)]}
-       
+            flag = True
+            #for msg in range(0,len(jfile)):
+            #    if jfile[msg]['eventid'] == str(self.e_id):
+            #        print("jfile[",msg,"] = ",jfile[msg],"\n")
+            #        print("self.sub_event[str(self.e_id)]= ",sself.sub_event[str(self.e_id)],"\n")
+            #        jfile[msg] = self.sub_event[str(self.e_id)]
+            #        print("after2  ",jfile,"\n")
+            #        flag = False
             jfile.append(event)
    
             with open("output2.json", 'w') as outfile:
@@ -190,15 +197,7 @@ class Branch(banking_pb2_grpc.BankingServicer):
             
             saveit_withdraw = self.e_id
             self.event_request("withdraw")
-            #if self.balance >= self.money:
-            #    print("HAAAAA?...", self.balance,"  " ,self.money)
-            #    self.balance = self.balance  - self.money
-                
-            #else:
-            #    print({"status": "failed"})
-            #    self.msg["data"]=[{"status": "failed"}]
-            #    return banking_pb2.BankingReply(id=self.id, interface = "failed", clock = self.clock) 
-            
+     
             for id in self.branches:
                 if id == self.id:
                       
