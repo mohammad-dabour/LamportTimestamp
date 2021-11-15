@@ -79,13 +79,13 @@ class Server:
         if exists('pids.run') and os.path.getsize("pids.run") > 0:
             return True
             
-    def serve(self, bind_address, balance, branches):
+    def serve(self,id, bind_address, balance, branches):
         
         process = multiprocessing.current_process()
         
         self.add_pid(process.pid)
         server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-        banking_pb2_grpc.add_BankingServicer_to_server(branch.Branch(id, balance, branches), server)
+        banking_pb2_grpc.add_BankingServicer_to_server(branch.Branch(id, balance, branches,1), server)
         server.add_insecure_port(bind_address)
         server.start()
         #_wait_forever(server)
@@ -94,7 +94,7 @@ class Server:
 
     def run(self):
     
-    
+        
         ids = self.get_ids()
         branches = self.get_branches()
         workers = list()
@@ -105,7 +105,7 @@ class Server:
             print("Starting server. Listning on port port  4080"+str(id))
         
             worker = multiprocessing.Process(target=self.serve,
-                                             args=(bind_address,balance, branches))
+                                             args=(id, bind_address,balance, branches))
             worker.start()
             workers.append(worker)
     
@@ -120,7 +120,7 @@ class Server:
 def readargs(argv):
     global inputfile
     global outputfile
-  
+    
     try:
         
         opts, args = getopt.getopt(argv,"hi:so:",["ifile=","ofile="])
@@ -156,5 +156,6 @@ def readargs(argv):
                 
 if __name__ == "__main__":
     readargs(sys.argv[1:])
+    
     server = Server(inputfile)
     server.run()
