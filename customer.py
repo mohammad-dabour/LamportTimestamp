@@ -58,8 +58,10 @@ class Customer: #client
                 res = await self.stub.MsgDelivery(req)
                 if res.interface == "failed":
                     
-                    print("\t\tWithdrow action failed..",{"id": self.id, self.events['interface']: "failed"},"\n")
-                
+                    print("\t\tWithdraw action failed..",{"id": self.id, self.events['interface']: "failed"},"\n")
+                else:
+                    print("\t\tWithdraw action done..",{"id": self.id, self.events['interface']: "success"},"\n")
+
                 print(f"Finished  {self.events['interface']}  id = {self.id} sub event = {self.events['id']} at  {time.strftime('%X')}\n")
 
     
