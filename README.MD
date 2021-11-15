@@ -23,5 +23,5 @@ $ ls  output.json
 
 $ python run.py  -s stop
 
-### output.json file
+### output.json file on linux/mac
  $ ls output.json
