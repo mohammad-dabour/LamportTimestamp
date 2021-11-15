@@ -213,7 +213,7 @@ class Branch(banking_pb2_grpc.BankingServicer):
                 stub = banking_pb2_grpc.BankingStub(ch)
                 req = banking_pb2.BankingRequest(id=id, 
                                                  interface = "withdraw_propogate",
-                                                 c_id = self.e_id,
+                                                 c_id = saveit_withdraw,
                                                  remote_clock = self.clock,
                                                 money = self.money)
                 
@@ -245,7 +245,7 @@ class Branch(banking_pb2_grpc.BankingServicer):
         
        
                     req = banking_pb2.BankingRequest(id=id, interface = "deposit_propogate",
-                                                     c_id = self.e_id,
+                                                     c_id = saveit_deposit,
                                                      remote_clock = self.clock,
                                                     money = self.money)
                     response = stub.MsgDelivery(req)
