@@ -5,6 +5,9 @@
 
 $ pip3.9 install -r requirements.txt 
 
+### [Optional]:
+$ python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. banking.proto 
+
 ### To run the server and provide it with inputs run:
 
 $ python3.9 run.py  -i input.json -t server
