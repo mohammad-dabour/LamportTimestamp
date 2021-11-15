@@ -102,7 +102,8 @@ async def fetch_customer(inputfile):
     seen = "" 
     for id in tasks.keys():
         if str(id) in c:
-            time.sleep(3)
+            #time.sleep(3)
+            await asyncio.sleep(4)
         else:
             c[str(id)]=1
        
@@ -180,3 +181,4 @@ if __name__ == "__main__":
     readargs(sys.argv[1:])
     asyncio.run(fetch_customer(inputfile))
     read_results()
+   
