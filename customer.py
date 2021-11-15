@@ -31,7 +31,7 @@ class Customer: #client
             self.stub = banking_pb2_grpc.BankingStub(ch)
           
             if self.events['interface'] == "query" :
-                await asyncio.sleep(3)
+                await asyncio.sleep(4)
                 req = banking_pb2.BankingRequest(id=self.id, interface = self.events['interface'],
                                              clock=1,
                                              c_id =0,
@@ -130,7 +130,7 @@ def read_results():
 
         print("Please wait.. result will be saved at local directory with a file name output.json..\n Also result will be printed to the console..\n")
         
-        time.sleep(1)
+        
         jfile1, jfile2 = [], []
         if os.path.exists("output1.json"):
                 
