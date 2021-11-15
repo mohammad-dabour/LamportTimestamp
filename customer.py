@@ -3,11 +3,6 @@ import banking_pb2
 import banking_pb2_grpc
 import time
 import json
-import branch
-from concurrent import futures
-import multiprocessing
-import datetime
-import time
 import os.path
 import asyncio 
 import sys, getopt
@@ -26,142 +21,128 @@ class Customer: #client
         self.stub = None
         self.result = {}
 
-        
 
-
-    # TODO: students are expected to create the Customer stub
-    def createStub(self):
-       
-        ch = grpc.insecure_channel('localhost:4080'+str(self.id))
-        self.stub = banking_pb2_grpc.BankingStub(ch)
-        #print(ch._connectivity_state.connectivity)
-        
-        
-        #response = stub.SquareRoot(number)
-        #print(response)
-
-    # TODO: students are expected to send out the events to the Bank
-  
 
     async def executeEvents(self):
         
-       
-        #self.createStub()
+       # the clinet reuqests will run async mode.
+
         async with grpc.aio.insecure_channel('localhost:4080'+str(self.id)) as ch:
             self.stub = banking_pb2_grpc.BankingStub(ch)
-            #response = await stub.SayHello(helloworld_pb2.HelloRequest(name='you'))
-            #print(e)
-            #print(e['interface'])
-            #req = banking_pb2.BankingRequest(id=self.id, interface = e['interface'], money = e['money'])
+          
             if self.events['interface'] == "query" :
                 await asyncio.sleep(3)
                 req = banking_pb2.BankingRequest(id=self.id, interface = self.events['interface'],
-                                             clock=1,c_id =0,
+                                             clock=1,
+                                             c_id =0,
                                              remote_clock=0,
-                                             e_id = 0)
+                                             e_id = -1,
+                                             money = self.events['money'])
             
                 await self.stub.MsgDelivery(req)
-                pass
-                #await self.updates(e)
+           
+
         
             else:
             
-                print(f"start {self.events['interface']}  at  {time.strftime('%X')}")
+                print(f"start {self.events['interface']}  id = {self.id} sub event = {self.events['id']} at  {time.strftime('%X')}\n")
                 #await asyncio.sleep(1)
-               
                 req = banking_pb2.BankingRequest(id=self.id, interface = self.events['interface'],
                                              clock=1,
                                              c_id =self.events['id'],
                                              remote_clock=0,
-                                             e_id = self.events['id'])
+                                             e_id = self.events['id'],
+                                                money = self.events['money'])
+                
             
-                await self.stub.MsgDelivery(req)
-                print(f"END {self.events['interface']}  at  {time.strftime('%X')}")
-
-        return 1
-        #return {"interface": response.interface, 'result': response.result}
-
+                res = await self.stub.MsgDelivery(req)
+                if res.interface == "failed":
+                    
+                    print("\t\tWithdrow action failed..",{"id": self.id, self.events['interface']: "failed"},"\n")
+                
+                print(f"Finished  {self.events['interface']}  id = {self.id} sub event = {self.events['id']} at  {time.strftime('%X')}\n")
 
     
     def get_results(self, id):
-        
+
         ch = grpc.insecure_channel('localhost:4080'+str(id))
         self.stub = banking_pb2_grpc.BankingStub(ch)
-        
+     
         req = banking_pb2.BResult(id=int(self.events['id']),type=self.events['interface'])
         self.stub.MsgResult(req)
-    
+        
 async def fetch_customer(inputfile):
-  
-    processes =  json.load(open(inputfile,'r'))
-    #branches = list()
     tasks = {}
-    tsk = []
-    result = {}
-    global results
-    
+    processes =  json.load(open(inputfile,'r'))
+    for p in processes:
+       
 
+        if p['type'] == 'customer' or p['type'] == 'client':
+            for e in p['events']:
+                tasks[str(e['id'])] = []
+
+    tsk = []
    
     for p in processes:
        
 
         if p['type'] == 'customer' or p['type'] == 'client':
-            tasks[str(p['id'])] = []
-            result[str(p['id'])] = []
-            result['recv'] = []
+  
 
             for e in p['events']:
                 c = Customer(p['id'], e)
                 task =  asyncio.create_task(c.executeEvents())
-                tasks[str(p['id'])].append(task)
-                tsk.append(task)
+                tasks[str(e['id'])].append(task)
+                #tsk.append(task)
     
-    await asyncio.gather(*tsk)
-    
-    '''
-    r = []
-    resutl=[]
+    #await asyncio.gather(*tsk)
+    c = {}
+    seen = "" 
     for id in tasks.keys():
+        if str(id) in c:
+            time.sleep(3)
+        else:
+            c[str(id)]=1
        
-        for e in tasks[id]:
-            r.append(await e)
-    
-    
-
-        results.append(r[0])
-        r =[]
-    '''
+        for e in tasks[str(id)]:
+            await e
+        
     for p in processes:
    
         if p['type'] == 'customer' or p['type'] == 'client':
-            
+       
             for e in p['events']:
+                
                 if e['interface'] != "query":
-          
+                    
                     c = Customer(p['id'], e)
                     c.get_results(int(p['id']))
                 elif len(p['events'])>1:
                     continue
                 else:
-     
                     c = Customer(p['id'], e)
+                    #print(" result id = ", int(p['id']))
                     c.get_results(int(p['id']))
-
         
 def read_results():
 
+        print("Please wait.. result will be saved at local directory with a file name output.json..\n Also result will be printed to the console..\n")
         
+        time.sleep(1)
         jfile1, jfile2 = [], []
         if os.path.exists("output1.json"):
                 
             jfile1 = json.load(open("output1.json",'r'))
-            
+        else:
+            print("temporary files were either deleted or manually modified..please check your desk.")
                 
 
         if os.path.exists("output2.json"):
                 
             jfile2 = json.load(open("output2.json",'r'))
-        
+        else:
+            print("temporary files were either deleted or manually modified..please check your desk.")
+
         with open("output.json", 'w') as outfile:
              json.dump(jfile1+jfile2, outfile)
 
