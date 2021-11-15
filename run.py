@@ -11,6 +11,9 @@ def clean():
     try:
         os.remove("nohup.out")
         os.remove("pids.run")
+        os.remove("output.json")
+        os.remove("output1.json")
+        os.remove("output2.json")
     except:
         pass
 
@@ -22,6 +25,12 @@ def execute(cmd, types):
   
     
     elif types == "customer":
+        try:
+            os.remove("output.json")
+            os.remove("output1.json")
+            os.remove("output2.json")
+        except OSError as e:
+            pass
         cmd = "  customer.py "+cmd
  
     
