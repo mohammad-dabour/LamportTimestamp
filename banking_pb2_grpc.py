@@ -19,23 +19,12 @@ class BankingStub(object):
                 request_serializer=banking__pb2.BankingRequest.SerializeToString,
                 response_deserializer=banking__pb2.BankingReply.FromString,
                 )
-        self.MsgResult = channel.unary_unary(
-                '/Banking/MsgResult',
-                request_serializer=banking__pb2.BResult.SerializeToString,
-                response_deserializer=banking__pb2.BResult.FromString,
-                )
 
 
 class BankingServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def MsgDelivery(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def MsgResult(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -48,11 +37,6 @@ def add_BankingServicer_to_server(servicer, server):
                     servicer.MsgDelivery,
                     request_deserializer=banking__pb2.BankingRequest.FromString,
                     response_serializer=banking__pb2.BankingReply.SerializeToString,
-            ),
-            'MsgResult': grpc.unary_unary_rpc_method_handler(
-                    servicer.MsgResult,
-                    request_deserializer=banking__pb2.BResult.FromString,
-                    response_serializer=banking__pb2.BResult.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -78,22 +62,5 @@ class Banking(object):
         return grpc.experimental.unary_unary(request, target, '/Banking/MsgDelivery',
             banking__pb2.BankingRequest.SerializeToString,
             banking__pb2.BankingReply.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
-    def MsgResult(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/Banking/MsgResult',
-            banking__pb2.BResult.SerializeToString,
-            banking__pb2.BResult.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
