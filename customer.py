@@ -3,14 +3,17 @@ import banking_pb2
 import banking_pb2_grpc
 import time
 import json
-import os.path
+import branch
+from concurrent import futures
+import multiprocessing
+import datetime
+import time
 import asyncio 
 import sys, getopt
 from grpc import aio  
-
-
+        
 class Customer: #client
-    def __init__(self, id, events):
+    def __init__(self, id, events, reset = False):
         # unique ID of the Customer
         self.id = id
         # events from the input
@@ -20,137 +23,196 @@ class Customer: #client
         # pointer for the stub
         self.stub = None
         self.result = {}
-
-
-
-    async def executeEvents(self):
+        self.writeset = 0
+        self.prev = 0
+        self.reset = reset
+        self.ops = list()
+        self.prev_dest = None
         
-       # the clinet reuqests will run async mode.
 
-        async with grpc.aio.insecure_channel('localhost:4080'+str(self.id)) as ch:
-            self.stub = banking_pb2_grpc.BankingStub(ch)
-          
-            if self.events['interface'] == "query" :
-                await asyncio.sleep(4)
-                req = banking_pb2.BankingRequest(id=self.id, interface = self.events['interface'],
-                                             clock=1,
-                                             c_id =0,
-                                             remote_clock=0,
-                                             e_id = -1,
-                                             money = self.events['money'])
+        
+
+
+    # TODO: students are expected to create the Customer stub
+    def createStub(self):
+       
+        ch = grpc.insecure_channel('localhost:4080'+str(self.events['dest']))
+        self.stub = banking_pb2_grpc.BankingStub(ch)
+        #print(ch._connectivity_state.connectivity)
+        
+        
+        #response = stub.SquareRoot(number)
+        #print(response)
+
+    # TODO: students are expected to send out the events to the Bank
+    
+    async def executeEvents(self):
+    #def executeEvents(self):
+        
+        #response = None
+        self.createStub()
+        
+        if self.prev_dest == None:
+            req = banking_pb2.BankingRequest(id=self.events['dest'], interface = "get_writeset", reset = False)
+        else:
+            req = banking_pb2.BankingRequest(id=self.prev_dest, interface = "get_writeset", reset = False)
+
+       
+        response1 =  self.stub.MsgDelivery(req)
+        self.prev_dest = self.events['dest']
+
+        if self.reset:
+            response1.writeset=0
+
+
+        if self.events['interface'] == "query" :
+            #await asyncio.sleep(3)
+           
             
-                await self.stub.MsgDelivery(req)
+            req = banking_pb2.BankingRequest(
+                id=self.events['dest'],
+                interface = self.events['interface'],
+                writeset = response1.writeset,
+                reset = self.reset)
+
+            response =  self.stub.MsgDelivery(req)
+           
+            return {"id": int(self.id), "balance": response.money,
+             "writeset": response.writeset,
+              "interface": self.events['interface'] }
+        
+        self.prev+=1
+        
+        req = banking_pb2.BankingRequest(id=self.events['dest'], 
+        interface = self.events['interface'],
+         money = self.events['money'],
+          writeset = response1.writeset,
+          reset = self.reset)
+
+        response =  self.stub.MsgDelivery(req)
+        #return None
+        return {"id": int(self.id), "balance": response.money, "writeset": response.writeset ,"interface": self.events['interface']}
+
+
+def check_read_write(events):
+
+    c = 0
+    for e in events:
+        evt = ['deposit', 'withdraw']
+        if e['interface'] in evt:
+            c+=1
+        elif c==1:
+            return True
+    
+        
+    return False
+
+
+
+        
+
+
+async def fetch_customer(inputfile):
+  
+    processes =  json.load(open(inputfile,'r'))
+    #branches = list()
+    tasks = {}
+    result = {}
+    #global results
+    
+
+    r = []
+    reset = False
+    check = False
+    for p in processes:
+       
+  
+        writeset = 0
+        
+        
+        if p['type'] == 'customer' or p['type'] == 'client':
+            tasks[str(p['id'])] = []
+            result[str(p['id'])] = []
+            #result['recv'] = []
+
+            
            
 
-        
-            else:
+
+            #tasks[str(p['id'])]['result']['recv']  = result['recv']
+            check  = check_read_write(p['events'])
+            q = []
             
-                print(f"start {self.events['interface']}  id = {self.id} sub event = {self.events['id']} at  {time.strftime('%X')}\n")
-                #await asyncio.sleep(1)
-                req = banking_pb2.BankingRequest(id=self.id, interface = self.events['interface'],
-                                             clock=1,
-                                             c_id =self.events['id'],
-                                             remote_clock=0,
-                                             e_id = self.events['id'],
-                                                money = self.events['money'])
-                
-            
-                res = await self.stub.MsgDelivery(req)
-                if res.interface == "failed":
-                    
-                    print("\t\tWithdraw action failed..",{"id": self.id, self.events['interface']: "failed"},"\n")
-                else:
-                    print("\t\tWithdraw action done..",{"id": self.id, self.events['interface']: "success"},"\n")
-
-                print(f"Finished  {self.events['interface']}  id = {self.id} sub event = {self.events['id']} at  {time.strftime('%X')}\n")
-
-    
-    def get_results(self, id):
-
-        ch = grpc.insecure_channel('localhost:4080'+str(id))
-        self.stub = banking_pb2_grpc.BankingStub(ch)
-     
-        req = banking_pb2.BResult(id=int(self.events['id']),type=self.events['interface'])
-        self.stub.MsgResult(req)
-        
-async def fetch_customer(inputfile):
-    tasks = {}
-    processes =  json.load(open(inputfile,'r'))
-    for p in processes:
-       
-
-        if p['type'] == 'customer' or p['type'] == 'client':
             for e in p['events']:
-                tasks[str(e['id'])] = []
 
-    tsk = []
-   
-    for p in processes:
-       
 
-        if p['type'] == 'customer' or p['type'] == 'client':
-  
-
-            for e in p['events']:
-                c = Customer(p['id'], e)
+                c = Customer(p['id'], e, reset)
                 task =  asyncio.create_task(c.executeEvents())
-                tasks[str(e['id'])].append(task)
-                #tsk.append(task)
-    
-    #await asyncio.gather(*tsk)
-    c = {}
-    seen = "" 
+                tasks[str(p['id'])].append(task)
+                tasks[str(p['id'])].append(check)
+                reset = False
+
+
+                #result = c.executeEvents()
+                ##writeset = result['writeset']
+
+                #if e['interface'] == "query" and not check:
+                #    r.append({"id": result['id'], "balance": result['balance']})
+                #elif e['interface'] == "query" and  check:
+                #     q.append(result['balance'])
+            #if check:
+            #    r.append({"id": p['id'], 'balance': q}) 
+            chek = False
+                
+
+
+            reset = True
+              
+       
+    r = []
+    result=[]
+    check = None
     for id in tasks.keys():
-        if str(id) in c:
-            #time.sleep(3)
-            await asyncio.sleep(4)
-        else:
-            c[str(id)]=1
-       
-        for e in tasks[str(id)]:
-            await e
-        
-    for p in processes:
-   
-        if p['type'] == 'customer' or p['type'] == 'client':
-       
-            for e in p['events']:
-                
-                if e['interface'] != "query":
+        q = []
+        if True in tasks[id]:
+            check = True
+        elif False in tasks[id]:
+            check = False
+
+        for e in tasks[id]:
+            if not isinstance(e,bool):
+                result = await e
+                print(result)
+
+                if result['interface'] == "query" and not check:
+                    print("am heree..", result, "check  = ", check)
                     
-                    c = Customer(p['id'], e)
-                    c.get_results(int(p['id']))
-                elif len(p['events'])>1:
-                    continue
-                else:
-                    c = Customer(p['id'], e)
-                    #print(" result id = ", int(p['id']))
-                    c.get_results(int(p['id']))
-        
-def read_results():
+                    r.append({"id": result['id'], "balance": result['balance']})
+       
+                elif result['interface'] == "query" and  check:
+                    q.append(result['balance'])
+        if check:
 
-        print("Please wait.. result will be saved at local directory with a file name output.json..\n Also result will be printed to the console..\n")
+            r.append({"id": result['id'], 'balance': q})
         
+
+    
+    
         
-        jfile1, jfile2 = [], []
-        if os.path.exists("output1.json"):
-                
-            jfile1 = json.load(open("output1.json",'r'))
-        else:
-            print("temporary files were either deleted or manually modified..please check your desk.")
-                
+        print(r)
+     
+       
+    with open(outputfile, 'a') as outfile:
+        json.dump(results, outfile)
 
-        if os.path.exists("output2.json"):
-                
-            jfile2 = json.load(open("output2.json",'r'))
-        else:
-            print("temporary files were either deleted or manually modified..please check your desk.")
+    #f = 
+    print("This result will also be stored into output.json file:\n\n", r, "\n\n")
 
-        with open("output.json", 'w') as outfile:
-             json.dump(jfile1+jfile2, outfile)
+    with open(outputfile, 'w') as outfile:
+        json.dump(r, outfile)
 
-        print(jfile1+jfile2) 
-        
+          
+
 inputfile =''
 outputfile='output.json'
 results = []
@@ -179,6 +241,6 @@ def readargs(argv):
              outputfile = arg
 if __name__ == "__main__":
     readargs(sys.argv[1:])
+    #fetch_customer(inputfile)
     asyncio.run(fetch_customer(inputfile))
-    read_results()
    
