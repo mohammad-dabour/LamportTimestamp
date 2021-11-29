@@ -19,49 +19,10 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\rbanking.proto\"#\n\x07\x42Result\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x0c\n\x04type\x18\x02 \x01(\t\"\x7f\n\x0e\x42\x61nkingRequest\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x11\n\tinterface\x18\x02 \x01(\t\x12\r\n\x05\x63lock\x18\x03 \x01(\x05\x12\x0c\n\x04\x63_id\x18\x04 \x01(\x05\x12\x14\n\x0cremote_clock\x18\x05 \x01(\x05\x12\x0c\n\x04\x65_id\x18\x06 \x01(\x11\x12\r\n\x05money\x18\x07 \x01(\x05\"<\n\x0c\x42\x61nkingReply\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x11\n\tinterface\x18\x02 \x01(\t\x12\r\n\x05\x63lock\x18\x03 \x01(\x05\x32]\n\x07\x42\x61nking\x12/\n\x0bMsgDelivery\x12\x0f.BankingRequest\x1a\r.BankingReply\"\x00\x12!\n\tMsgResult\x12\x08.BResult\x1a\x08.BResult\"\x00\x62\x06proto3'
+  serialized_pb=b'\n\rbanking.proto\"_\n\x0e\x42\x61nkingRequest\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x11\n\tinterface\x18\x02 \x01(\t\x12\r\n\x05money\x18\x03 \x01(\x02\x12\x10\n\x08writeset\x18\x04 \x01(\x05\x12\r\n\x05reset\x18\x05 \x01(\x08\"^\n\x0c\x42\x61nkingReply\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x11\n\tinterface\x18\x02 \x01(\t\x12\x0e\n\x06result\x18\x03 \x01(\t\x12\r\n\x05money\x18\x04 \x01(\x02\x12\x10\n\x08writeset\x18\x05 \x01(\x05\x32:\n\x07\x42\x61nking\x12/\n\x0bMsgDelivery\x12\x0f.BankingRequest\x1a\r.BankingReply\"\x00\x62\x06proto3'
 )
 
 
-
-
-_BRESULT = _descriptor.Descriptor(
-  name='BResult',
-  full_name='BResult',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  create_key=_descriptor._internal_create_key,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='id', full_name='BResult.id', index=0,
-      number=1, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='type', full_name='BResult.type', index=1,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=b"".decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=17,
-  serialized_end=52,
-)
 
 
 _BANKINGREQUEST = _descriptor.Descriptor(
@@ -87,37 +48,23 @@ _BANKINGREQUEST = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='clock', full_name='BankingRequest.clock', index=2,
-      number=3, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
+      name='money', full_name='BankingRequest.money', index=2,
+      number=3, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='c_id', full_name='BankingRequest.c_id', index=3,
+      name='writeset', full_name='BankingRequest.writeset', index=3,
       number=4, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='remote_clock', full_name='BankingRequest.remote_clock', index=4,
-      number=5, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='e_id', full_name='BankingRequest.e_id', index=5,
-      number=6, type=17, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='money', full_name='BankingRequest.money', index=6,
-      number=7, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
+      name='reset', full_name='BankingRequest.reset', index=4,
+      number=5, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
@@ -133,8 +80,8 @@ _BANKINGREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=54,
-  serialized_end=181,
+  serialized_start=17,
+  serialized_end=112,
 )
 
 
@@ -161,8 +108,22 @@ _BANKINGREPLY = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='clock', full_name='BankingReply.clock', index=2,
-      number=3, type=5, cpp_type=1, label=1,
+      name='result', full_name='BankingReply.result', index=2,
+      number=3, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='money', full_name='BankingReply.money', index=3,
+      number=4, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='writeset', full_name='BankingReply.writeset', index=4,
+      number=5, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -179,21 +140,13 @@ _BANKINGREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=183,
-  serialized_end=243,
+  serialized_start=114,
+  serialized_end=208,
 )
 
-DESCRIPTOR.message_types_by_name['BResult'] = _BRESULT
 DESCRIPTOR.message_types_by_name['BankingRequest'] = _BANKINGREQUEST
 DESCRIPTOR.message_types_by_name['BankingReply'] = _BANKINGREPLY
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
-
-BResult = _reflection.GeneratedProtocolMessageType('BResult', (_message.Message,), {
-  'DESCRIPTOR' : _BRESULT,
-  '__module__' : 'banking_pb2'
-  # @@protoc_insertion_point(class_scope:BResult)
-  })
-_sym_db.RegisterMessage(BResult)
 
 BankingRequest = _reflection.GeneratedProtocolMessageType('BankingRequest', (_message.Message,), {
   'DESCRIPTOR' : _BANKINGREQUEST,
@@ -218,8 +171,8 @@ _BANKING = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=245,
-  serialized_end=338,
+  serialized_start=210,
+  serialized_end=268,
   methods=[
   _descriptor.MethodDescriptor(
     name='MsgDelivery',
@@ -228,16 +181,6 @@ _BANKING = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=_BANKINGREQUEST,
     output_type=_BANKINGREPLY,
-    serialized_options=None,
-    create_key=_descriptor._internal_create_key,
-  ),
-  _descriptor.MethodDescriptor(
-    name='MsgResult',
-    full_name='Banking.MsgResult',
-    index=1,
-    containing_service=None,
-    input_type=_BRESULT,
-    output_type=_BRESULT,
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
   ),
