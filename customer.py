@@ -151,17 +151,6 @@ async def fetch_customer(inputfile):
                 tasks[str(p['id'])].append(task)
                 tasks[str(p['id'])].append(check)
                 reset = False
-
-
-                #result = c.executeEvents()
-                ##writeset = result['writeset']
-
-                #if e['interface'] == "query" and not check:
-                #    r.append({"id": result['id'], "balance": result['balance']})
-                #elif e['interface'] == "query" and  check:
-                #     q.append(result['balance'])
-            #if check:
-            #    r.append({"id": p['id'], 'balance': q}) 
             chek = False
                 
 
@@ -182,13 +171,13 @@ async def fetch_customer(inputfile):
         for e in tasks[id]:
             if not isinstance(e,bool):
                 result = await e
-                print(result)
+                #print(result)
 
                 if result['interface'] == "query" and not check:
-                    print("am heree..", result, "check  = ", check)
+                    #print("am heree..", result, "check  = ", check)
                     
                     r.append({"id": result['id'], "balance": result['balance']})
-       
+     
                 elif result['interface'] == "query" and  check:
                     q.append(result['balance'])
         if check:
@@ -199,13 +188,8 @@ async def fetch_customer(inputfile):
     
     
         
-        print(r)
-     
-       
-    with open(outputfile, 'a') as outfile:
-        json.dump(results, outfile)
+    print(r)
 
-    #f = 
     print("This result will also be stored into output.json file:\n\n", r, "\n\n")
 
     with open(outputfile, 'w') as outfile:
