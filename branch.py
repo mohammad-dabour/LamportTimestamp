@@ -1,13 +1,12 @@
 import grpc
 import banking_pb2
 import banking_pb2_grpc
-import asyncio 
 import time
-import os.path
-import json
+
+
 class Branch(banking_pb2_grpc.BankingServicer):
 
-    def __init__(self, id, balance, branches, clock=1): 
+    def __init__(self, id, balance, branches):
         # unique ID of the Branch
         self.id = id
         # replica of the Branch's balance
@@ -17,263 +16,192 @@ class Branch(banking_pb2_grpc.BankingServicer):
         # the list of Client stubs to communicate with the branches
         self.stubList = list() ## what is supposed to be included here?...
         # a list of received messages used for debugging purpose
-        self.msg = {"pid": self.id, "data": []}
-        self.money = 0
-        
         self.recvMsg = list()
-        
-        # clock is going to be initilze here
-        self.clock = clock
+        self.writeset = 0
+        self.writesetOps = list()
 
-        self.e_id = -1
-        self.sub_event = {}
-        self.prop_req=False
-        self.r_c =0
-        self.withdraw_failed=False
-      
+        # iterate the processID of the branches
 
         
-
-    def event_request(self, event):
    
-        self.clock = max(self.clock, self.r_c) + 1
-        
-        self.msg["data"].append({"id": self.e_id, "name": event+"_request", "clock": self.clock})
-        
-        self.sub_event[str(self.e_id)].append({"clock": self.clock, "name": event+"_request"})
-     
-        if event == "withdraw":
-            if self.balance >= self.money:
-                self.event_execute(event)
-            else:
-                #print({"withdraw": "failed"})
-                self.withdraw_failed= True
-                #self.msg["data"]=[{"withdraw": "failed"}]
-                return banking_pb2.BankingReply(id=self.id, interface = "failed", clock = self.clock) 
-        else:
-            self.event_execute(event)
-
-        
 
  
-    def event_execute(self, event):
-        if event == "withdraw":
-                self.balance = self.balance  - self.money
-       
-        self.clock = self.clock+1
-        self.msg["data"].append({"id": self.e_id, "name": event+"_execute", "clock": self.clock})
-        self.sub_event[str(self.e_id)].append({"clock": self.clock, "name": event+"_execute"})
-    
-
-    
-    def event_response(self,event):
-        self.clock = self.clock+1
-
-        self.sub_event[str(self.e_id)].append({"clock": self.clock, "name": event+"_response"})
-        self.msg["data"].append({"id": self.e_id, "name": event+"_response", "clock": self.clock})
-
+    def withdraw(self, money):
         
-
-
+        print("at: withdraw current balance ", self.balance)
     
-    def event_propogate_request(self, remote_clock, c_id, event):
-
-        self.clock = max(self.clock, remote_clock)+1
-        self.msg["data"].append({"id": c_id, "name": event+"_propogate_request", "clock": self.clock})
-        return self.event_propogate_execute(c_id, event)
-
-    def event_propogate_execute(self, c_id, event):
-            self.clock = self.clock+1
-         
-            self.msg["data"].append({"id": c_id, "name": event+"_propogate_execute", "clock": self.clock})
-            return {"id": c_id, "name": event+"_propogate_execute", "clock": self.clock}
-   
-    def event_propogate_response(self, clock, event):
-            self.clock +=1
-            self.msg["data"].append({"id": self.e_id, "name": event+"_propogate_response", "clock": self.clock})
+        if self.balance >= money:
+           
+            self.balance = self.balance - money
+            #self.update("withdraw", money)
             
-      
-
-    
-    def MsgResult(self, request, context):
-        #print("request.id: ",request.id)
-        self.e_id = request.id
-
-        if request.type == "withdraw":
-
-            self.event_response("withdraw")
+            return self.check_id(self.id, "withdraw", False)
             
-        elif  request.type == "deposit":
-            self.event_response("deposit")
-
-        if not os.path.exists("output1.json"):
-
-            with open("output1.json", 'w') as outfile:
-                    json.dump([self.msg], outfile)
+            
         else:
-            
-            jfile = json.load(open("output1.json",'r'))
-            
-            flag = True
-            for msg in range(0,len(jfile)):
-                if jfile[msg]['pid'] == self.msg['pid']:
-                    #print("jfile[",msg,"] = ",jfile[msg],"\n")
-                    #print("self.msg= ",self.msg,"\n")
-                    jfile[msg] = self.msg
-                    #print("after  ",jfile,"\n")
-                    flag = False
-         
-            
-            if flag:
-                jfile.append(self.msg)
+            #ToDO return fail.
+            return self.check_id(self.id, "withdraw", True)
+        
+       
+        
+    def check_id(self,id, action, fail=False):
+        result = dict()
+        if fail:
+            result = {
+                "id": self.id,
+                "interface": action,
+                "result": "fail",
+                "money": self.balance
 
+            }
+        else:
+            result = {
+                "id": self.id,
+                "interface": action,
+                "result": "success",
+                "money": self.balance
 
-            with open("output1.json", 'w') as outfile:
-                json.dump(jfile, outfile)
-
-        if not os.path.exists("output2.json") and request.type != "query":
+            }
+        return result
     
 
-                with open("output2.json", 'w') as outfile:
+    
+    
+    def update(self, new_balance):
+            print("Update was called")
+            if new_balance != self.balance:
+                if new_balance > self.balance: # it means deposit
+                    self.writeset = 1
+                    self.writesetOps.append("deposit")
+                if new_balance < self.balance: # it means withdraw
+                    self.writeset = 2
+                    self.writesetOps.append("withdraw")
+                
+                self.balance = new_balance
+                return  self.check_id(self.id, "update", False)
+            
+            else:
+                return  self.check_id(self.id, "update", True)
 
-                    event = {"eventid": str(self.e_id), "data": self.sub_event[str(self.e_id)]}
-                    json.dump([event], outfile)
 
-        elif request.type != "query":  
-            #print()
-            jfile = json.load(open("output2.json",'r'))
+    
+    def deposit(self, money):
+        #print("before: deposit current balance ", self.balance)
+        if money > 0:
 
-
-            event = {"eventid": str(self.e_id), "data": self.sub_event[str(self.e_id)]}
-            flag = True
-            #for msg in range(0,len(jfile)):
-            #    if jfile[msg]['eventid'] == str(self.e_id):
-            #        print("jfile[",msg,"] = ",jfile[msg],"\n")
-            #        print("self.sub_event[str(self.e_id)]= ",sself.sub_event[str(self.e_id)],"\n")
-            #        jfile[msg] = self.sub_event[str(self.e_id)]
-            #        print("after2  ",jfile,"\n")
-            #        flag = False
-            jfile.append(event)
-   
-            with open("output2.json", 'w') as outfile:
-                    json.dump(jfile, outfile)
-
+            self.balance = self.balance + money
+            #self.propagate("deposit", money)
+            return  self.check_id(self.id, "deposit", False)
+            
+        else:
+            return  self.check_id(self.id, "deposit", True)
 
             
-        return banking_pb2.BResult(id=self.id)
+    def query(self):
+
+        #{'id': 1, 'recv': [{'interface': 'query', 'result': 'success', 'money': 500}]}
+        r = self.check_id(self.id, "query", False)
+  
+        
+        return  self.check_id(self.id, "query", False)
+
+        #print("result", result)
+
 
     def MsgDelivery(self,request, context):
         
-
-        #self.withdraw_failed=False
-        self.e_id = request.e_id
-        interface = request.interface
-        c_id = request.c_id
-        self.money = request.money
+        
+        if request.reset == True:
+            print("To reset at interface?..  ", request.interface)
+            self.writeset = 0
+            self.writesetOps = list()
+        #else:
+            #print("No it is not ", request.reset)
+        result = dict()
         self.id = request.id
-        
-         
-        remote_clock  = request.remote_clock
-        self.r_c = remote_clock
-  
+        interface = request.interface
+        money = request.money
 
-        if request.interface != "query":
-            if str(self.e_id) not in self.sub_event and interface != "deposit_propogate" and interface != "withdraw_propogate":
-                
-                self.sub_event[str(self.e_id)] = []
-                #                self.sub_event = {str(self.e_id): []}
+        #withdraw, query, deposit
+        if interface == "get_writeset":
+            return banking_pb2.BankingReply(id=self.id, writeset = self.writeset)
 
-            
 
-       
-
-                
-            
-                
-        
-    
-       
         if interface == "withdraw":
+            if request.writeset  == self.writeset:
+                self.writesetOps.append("withdraw")
+                #print("at withdraw request.writeset  = ",request.writeset , "self.writeset = ",self.writeset)
+                result = dict(self.withdraw(money))
+                self.writeset = 2
+            else:
+                while  request.writeset  != self.writeset:
+                    #print("request.writeset  = ",request.writeset , "self.writeset = ",self.writeset)
+                    time.sleep(1)
             
             
-            saveit_withdraw = self.e_id
-            self.event_request("withdraw")
-     
             for id in self.branches:
-                if id == self.id:
-                      
-                    continue
-                if self.withdraw_failed:
-                    return banking_pb2.BankingReply(id=self.id, interface = "failed", clock = self.clock) 
-
-                    break
-                
-                self.prop_req+=1
                 ch = grpc.insecure_channel("localhost:4080"+str(id))
                 stub = banking_pb2_grpc.BankingStub(ch)
-                req = banking_pb2.BankingRequest(id=id, 
-                                                 interface = "withdraw_propogate",
-                                                 c_id = saveit_withdraw,
-                                                 remote_clock = self.clock,
-                                                money = self.money)
-                
+        
+                #self.stubList.append(stub)
+                req = banking_pb2.BankingRequest(id=id, interface = "update",
+                 money = result['money'],
+                  writeset = self.writeset,
+                  reset = request.reset)
                 response = stub.MsgDelivery(req)
-                self.e_id = saveit_withdraw
-                self.clock=max(self.clock, response.clock)
-                self.sub_event[str(saveit_withdraw)].append({"clock": response.clock-1, "name": "withdraw_propogate_request"})
-                self.sub_event[str(saveit_withdraw)].append({"clock": response.clock, "name": "withdraw_propogate_execute"})
-                self.e_id = saveit_withdraw
-                self.event_propogate_response(self.e_id, "withdraw")
-                self.sub_event[str(saveit_withdraw)].append({"clock": self.clock, "name": "withdraw_propogate_response"})
-
+                if response.money != result['money']:
+                    self.check_id(id, "withdraw", True)
+            #print("after: withdraw current balance ", self.balance)
         elif interface == "deposit":
-            
-                self.balance = self.balance  + self.money 
-                self.event_request("deposit")
-               
-                saveit_deposit = self.e_id
                 
+                '''
+                make sure that caller'r writeset and current server writeset has same value 
+                because this means they're both working over the latest  version of balance
+                '''
+                if request.writeset  == self.writeset:
+                    #print(" at deposit request.writeset  = ",request.writeset , "self.writeset = ",self.writeset)
+                    result = dict(self.deposit(money))
+                    self.writesetOps.append("deposit")
+                    
+                    self.writeset = 1
+                else:
+                    #print("request.writeset  = ",request.writeset , "self.writeset = ",self.writeset)
+                    while  request.writeset != self.writeset:
+                        print("am here!!!!... and request.writeset = ",request.writeset , " self.writeset = ",self.writeset )
+                        time.sleep(1)
                 
                 for id in self.branches:
                     
                     if id == self.id:
-                      
                         continue
-
                     ch = grpc.insecure_channel("localhost:4080"+str(id))
                     stub = banking_pb2_grpc.BankingStub(ch)
-        
-       
-                    req = banking_pb2.BankingRequest(id=id, interface = "deposit_propogate",
-                                                     c_id = saveit_deposit,
-                                                     remote_clock = self.clock,
-                                                    money = self.money)
+                    #print("after done?..", id, self.id)
+                    req = banking_pb2.BankingRequest(id=id,
+                     interface = "update",
+                      money = result['money'],
+                       writeset = self.writeset,
+                       reset =  request.reset)
+                       
                     response = stub.MsgDelivery(req)
-                    self.e_id = saveit_deposit
-                    self.clock=max(self.clock, response.clock)
-                    print("AAwell i got saveit_deposit: "+str(self.e_id)," ", saveit_deposit, self.sub_event.keys())
-
-                    self.sub_event[str(saveit_deposit)].append({"clock": response.clock-1, "name": "deposit_propogate_request"})
-                    self.sub_event[str(saveit_deposit)].append({"clock": response.clock, "name": "deposit_propogate_execute"})
-                   
-                    print("is it zero deposit = ", self.e_id)
-                    
-                    self.event_propogate_response(self.e_id, "deposit")
-                    self.sub_event[str(saveit_deposit)].append({"clock": self.clock, "name": "deposit_propogate_response"})
-                    
-        elif interface == "withdraw_propogate":
+                    #print("then here")
+                    if response.money != result['money']:
+                        self.check_id(id, "deposit", True)
+                #print("after: deposit current balance ", self.balance)
+        elif interface == "update":
+            #print("I came here..")
+            result = dict(self.update(money))
+            #print("Done: new balance is: ", self.balance, " interface was deposit ")
+        else:
+            if request.writeset  == self.writeset:
+                result = dict(self.query())
+            else:
+                while  request.writeset  != self.writeset:
+                    time.sleep(1)
             
-            self.balance = self.balance  - self.money 
-
-            result = self.event_propogate_request(remote_clock,c_id,"withdraw")
-            
-            return banking_pb2.BankingReply(id=self.id, interface = "withdraw_propogate", clock = result['clock'])
          
-            
-        elif interface == "deposit_propogate":
-            self.balance = self.balance  + self.money
-            result = self.event_propogate_request(remote_clock,c_id,"deposit")
-            
-            return banking_pb2.BankingReply(id=self.id, interface = "deposit_propogate", clock = result['clock'])
-        
-        return banking_pb2.BankingReply(id=self.id, interface = "done", clock = self.clock)
+        return banking_pb2.BankingReply(id=self.id,
+         interface = result['interface'],
+          result = result['result'],
+            money= result['money'],
+             writeset = self.writeset)
