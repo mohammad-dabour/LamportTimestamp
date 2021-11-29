@@ -16,12 +16,13 @@ $ python3.9 run.py  -i input.json -t server
 
 $ python run.py  -i input.json -t customer
 
-### To find the output file..
+### output.json file on linux/mac
 $ ls  output.json
 
 #### To stop the server:
 
 $ python run.py  -s stop
 
-### output.json file on linux/mac
- $ ls output.json
+### Important note: IF you want to test 2 different inputs files, you need first to stop the server properly after the 1st input file and then read the outputs and then start it again with new input file and then read the output. so output file will be overwritten.
+ $ python run.py  -s stop
+ $ python3.9 run.py  -i input.json -t server
