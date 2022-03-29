@@ -1,6 +1,6 @@
 ### This project does not support python2.x
 
-This is  dummy Banking system doing deposit/withdraw/Query. However its meant to implement The Lamport timestamp algorithm which is a simple logical clock algorithm used to determine the order of events. I used gRPC asyncio. The main purpose of this project was to impement Lamport timestamp alg..however a possible improvment for this dummy project can be  converting client side to API using flask which I might do later. 
+Its meant to implement The Lamport timestamp algorithm which is a simple logical clock algorithm used to determine the order of events. I used gRPC asyncio. The main purpose of this project was to impement Lamport timestamp alg..however a possible improvment for this dummy project can be  converting client side to API using flask which I might do later. 
 
 
 ### To install the requirements run the following command:
