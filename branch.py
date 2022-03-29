@@ -36,6 +36,7 @@ class Branch(banking_pb2_grpc.BankingServicer):
 
     def event_request(self, event):
    
+
         self.clock = max(self.clock, self.r_c) + 1
         
         self.msg["data"].append({"id": self.e_id, "name": event+"_request", "clock": self.clock})
@@ -46,9 +47,9 @@ class Branch(banking_pb2_grpc.BankingServicer):
             if self.balance >= self.money:
                 self.event_execute(event)
             else:
-                #print({"withdraw": "failed"})
+
                 self.withdraw_failed= True
-                #self.msg["data"]=[{"withdraw": "failed"}]
+               
                 return banking_pb2.BankingReply(id=self.id, interface = "failed", clock = self.clock) 
         else:
             self.event_execute(event)
@@ -57,6 +58,8 @@ class Branch(banking_pb2_grpc.BankingServicer):
 
  
     def event_execute(self, event):
+        
+        
         if event == "withdraw":
                 self.balance = self.balance  - self.money
        
@@ -67,6 +70,8 @@ class Branch(banking_pb2_grpc.BankingServicer):
 
     
     def event_response(self,event):
+        
+        
         self.clock = self.clock+1
 
         self.sub_event[str(self.e_id)].append({"clock": self.clock, "name": event+"_response"})
@@ -83,12 +88,13 @@ class Branch(banking_pb2_grpc.BankingServicer):
         return self.event_propogate_execute(c_id, event)
 
     def event_propogate_execute(self, c_id, event):
-            self.clock = self.clock+1
-         
+        
+            self.clock = self.clock+1 
             self.msg["data"].append({"id": c_id, "name": event+"_propogate_execute", "clock": self.clock})
             return {"id": c_id, "name": event+"_propogate_execute", "clock": self.clock}
    
     def event_propogate_response(self, clock, event):
+        
             self.clock +=1
             self.msg["data"].append({"id": self.e_id, "name": event+"_propogate_response", "clock": self.clock})
             
@@ -96,7 +102,7 @@ class Branch(banking_pb2_grpc.BankingServicer):
 
     
     def MsgResult(self, request, context):
-        #print("request.id: ",request.id)
+        
         self.e_id = request.id
 
         if request.type == "withdraw":
@@ -140,19 +146,13 @@ class Branch(banking_pb2_grpc.BankingServicer):
                     json.dump([event], outfile)
 
         elif request.type != "query":  
-            #print()
+          
             jfile = json.load(open("output2.json",'r'))
 
 
             event = {"eventid": str(self.e_id), "data": self.sub_event[str(self.e_id)]}
             flag = True
-            #for msg in range(0,len(jfile)):
-            #    if jfile[msg]['eventid'] == str(self.e_id):
-            #        print("jfile[",msg,"] = ",jfile[msg],"\n")
-            #        print("self.sub_event[str(self.e_id)]= ",sself.sub_event[str(self.e_id)],"\n")
-            #        jfile[msg] = self.sub_event[str(self.e_id)]
-            #        print("after2  ",jfile,"\n")
-            #        flag = False
+           
             jfile.append(event)
    
             with open("output2.json", 'w') as outfile:
@@ -165,7 +165,7 @@ class Branch(banking_pb2_grpc.BankingServicer):
     def MsgDelivery(self,request, context):
         
 
-        #self.withdraw_failed=False
+       
         self.e_id = request.e_id
         interface = request.interface
         c_id = request.c_id
@@ -181,22 +181,12 @@ class Branch(banking_pb2_grpc.BankingServicer):
             if str(self.e_id) not in self.sub_event and interface != "deposit_propogate" and interface != "withdraw_propogate":
                 
                 self.sub_event[str(self.e_id)] = []
-                #                self.sub_event = {str(self.e_id): []}
 
-            
-
-       
-
-                
-            
-                
-        
-    
-       
         if interface == "withdraw":
             
             
             saveit_withdraw = self.e_id
+            
             self.event_request("withdraw")
      
             for id in self.branches:
